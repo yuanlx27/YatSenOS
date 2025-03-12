@@ -1,0 +1,10 @@
+name: yatsenos
+
+services:
+  dev:
+    image: "yatsenos"
+    container_name: "yatsenos_dev"
+    volumes:
+      - "./main:/app"
+    working_dir: "/app"
+    command: "sleep infinity"
