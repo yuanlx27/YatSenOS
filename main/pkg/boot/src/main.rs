@@ -10,9 +10,9 @@ use alloc::boxed::Box;
 use alloc::vec;
 use uefi::{entry, Status};
 use x86_64::registers::control::*;
+use xmas_elf::ElfFile;
 use ysos_boot::*;
-
-mod config;
+use uefi::mem::memory_map::MemoryMap;
 
 const CONFIG_PATH: &str = "\\EFI\\BOOT\\boot.conf";
 
@@ -24,19 +24,21 @@ fn efi_main() -> Status {
     info!("Running UEFI bootloader...");
 
     // 1. Load config
-    let config = { /* FIXME: Load config file as Config */ };
+    let mut file = open_file(CONFIG_PATH);
+    let buf = load_file(&mut file);
+    let config = config::Config::parse(buf);
 
     info!("Config: {:#x?}", config);
 
     // 2. Load ELF files
-    let elf = { /* FIXME: Load kernel elf file */ };
+    let mut file = open_file(config.kernel_path);
+    let buf = load_file(&mut file);
+    let elf = ElfFile::new(buf).unwrap();
 
-    unsafe {
-        set_entry(elf.header.pt2.entry_point() as usize);
-    }
+    set_entry(elf.header.pt2.entry_point() as usize);
 
     // 3. Load MemoryMap
-    let mmap = uefi::boot::memory_map(MemoryType::LOADER_DATA).expect("Failed to get memory map");
+    let mmap = uefi::boot::memory_map(uefi::boot::MemoryType::LOADER_DATA).expect("Failed to get memory map");
 
     let max_phys_addr = mmap
         .entries()
@@ -48,15 +50,39 @@ fn efi_main() -> Status {
     // 4. Map ELF segments, kernel stack and physical memory to virtual memory
     let mut page_table = current_page_table();
 
-    // FIXME: root page table is readonly, disable write protect (Cr0)
+    // DONE: root page table is readonly, disable write protect (Cr0)
+    unsafe {
+        Cr0::update(|f| f.remove(Cr0Flags::WRITE_PROTECT));
+    }
 
-    // FIXME: map physical memory to specific virtual address offset
+    // DONE: map physical memory to specific virtual address offset
+    elf::map_physical_memory(
+        config.physical_memory_offset,
+        max_phys_addr,
+        &mut page_table,
+        &mut UEFIFrameAllocator,
+    );
 
-    // FIXME: load and map the kernel elf file
+    // DONE: load and map the kernel elf file
+    let _ = elf::load_elf(
+        &elf,
+        config.physical_memory_offset,
+        &mut page_table,
+        &mut UEFIFrameAllocator,
+    );
 
-    // FIXME: map kernel stack
+    // DONE: map kernel stack
+    let _ = elf::map_range(
+        config.kernel_stack_address,
+        config.kernel_stack_size,
+        &mut page_table,
+        &mut UEFIFrameAllocator,
+    );
 
-    // FIXME: recover write protect (Cr0)
+    // DONE: recover write protect (Cr0)
+    unsafe {
+        Cr0::update(|f| f.insert(Cr0Flags::WRITE_PROTECT));
+    }
 
     free_elf(elf);
 

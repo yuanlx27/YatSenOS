@@ -58,9 +58,7 @@ impl<'a> Config<'a> {
         match key {
             "kernel_stack_address" => self.kernel_stack_address = r16,
             "kernel_stack_size" => self.kernel_stack_size = r10,
-            "physical_memory_offset" => {
-                self.physical_memory_offset = r16;
-            }
+            "physical_memory_offset" => self.physical_memory_offset = r16,
             "kernel_path" => self.kernel_path = value,
             "kernel_stack_auto_grow" => self.kernel_stack_auto_grow = r10,
             "cmdline" => self.cmdline = value,

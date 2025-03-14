@@ -1,4 +1,5 @@
 use super::uart16550::SerialPort;
+use crate::utils::get_ascii_header;
 
 const SERIAL_IO_PORT: u16 = 0x3F8; // COM1
 
@@ -8,7 +9,7 @@ pub fn init() {
     init_SERIAL(SerialPort::new(SERIAL_IO_PORT));
     get_serial_for_sure().init();
 
-    println!("{}", crate::get_ascii_header());
+    println!("{}", get_ascii_header());
     println!("[+] Serial Initialized.");
 }
 
