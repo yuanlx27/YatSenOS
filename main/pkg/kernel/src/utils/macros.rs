@@ -69,6 +69,16 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
     // force unlock serial for panic output
     unsafe { SERIAL.get().unwrap().force_unlock() };
 
-    error!("ERROR: panic!\n\n{:#?}", info);
+    if let Some(location) = info.location() {
+        error!(
+            "ERROR: panic at file '{}' line {}\n\n{:#?}",
+            location.file(),
+            location.line(),
+            info
+        );
+    } else {
+        error!("ERROR: panic!\n\n{:#?}", info);
+    }
+
     loop {}
 }

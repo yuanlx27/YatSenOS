@@ -18,7 +18,7 @@ impl log::Log for Logger {
     }
 
     fn log(&self, record: &Record) {
-        // FIXME: Implement the logger with serial output
+        // DONE: Implement the logger with serial output
         let prefix = match record.level() {
             log::Level::Error => "\x1b[1;31mERROR:",
             log::Level::Warn => "\x1b[1;33mWARNING:",
