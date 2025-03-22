@@ -1,7 +1,9 @@
 use crate::memory::*;
+use x86_64::VirtAddr;
 use x86_64::registers::control::Cr2;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode};
 
+#[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe fn register_idt(idt: &mut InterruptDescriptorTable) {
     idt.divide_error.set_handler_fn(divide_error_handler);
     idt.double_fault
@@ -14,6 +16,9 @@ pub unsafe fn register_idt(idt: &mut InterruptDescriptorTable) {
     // TODO: you should handle more exceptions here
     // especially general protection fault (GPF)
     // see: https://wiki.osdev.org/Exceptions
+    idt.general_protection_fault
+        .set_handler_fn(general_protection_fault_handler)
+        .set_stack_index(gdt::GENERAL_PROTECTION_FAULT_IST_INDEX);
 }
 
 pub extern "x86-interrupt" fn divide_error_handler(stack_frame: InterruptStackFrame) {
@@ -40,4 +45,14 @@ pub extern "x86-interrupt" fn page_fault_handler(
         Cr2::read().unwrap_or(VirtAddr::new_truncate(0xdeadbeef)),
         stack_frame
     );
+}
+
+pub extern "x86-interrupt" fn general_protection_fault_handler(
+    stack_frame: InterruptStackFrame,
+    error_code: u64
+) {
+    panic!(
+        "EXCEPTION: GENERAL PROTECTION FAULT, ERROR_CODE: 0x{:016x}\n\n{:#?}",
+        error_code, stack_frame
+    )
 }

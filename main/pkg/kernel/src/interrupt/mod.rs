@@ -1,7 +1,7 @@
 mod apic;
 mod consts;
-// mod clock;
-// mod serial;
+mod clock;
+mod serial;
 mod exceptions;
 
 use apic::*;
@@ -14,7 +14,9 @@ lazy_static! {
         unsafe {
             exceptions::register_idt(&mut idt);
             // TODO: clock::register_idt(&mut idt);
+            //clock::register_idt(&mut idt);
             // TODO: serial::register_idt(&mut idt);
+            //serial::register_idt(&mut idt);
         }
         idt
     };

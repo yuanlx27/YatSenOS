@@ -4,6 +4,8 @@ use core::fmt::{Debug, Error, Formatter};
 use core::ptr::{read_volatile, write_volatile};
 use x86::cpuid::CpuId;
 
+use crate::interrupt::consts::{Interrupts, Irq};
+
 /// Default physical address of xAPIC
 pub const LAPIC_ADDR: u64 = 0xFEE00000;
 
@@ -34,28 +36,58 @@ impl LocalApic for XApic {
     /// If this type APIC is supported
     fn support() -> bool {
         // FIXME: Check CPUID to see if xAPIC is supported.
+        CpuId::new().get_feature_info().unwrap().has_apic()
     }
 
     /// Initialize the xAPIC for the current CPU.
     fn cpu_init(&mut self) {
         unsafe {
-            // FIXME: Enable local APIC; set spurious interrupt vector.
+            // DONE: Enable local APIC; set spurious interrupt vector.
+            let mut spiv = self.read(0x0F0);
+            spiv |= 0x100;
+            spiv &= !0xFF;
+            spiv |= Interrupts::IrqBase as u32 + Irq::Spurious as u32;
+            self.write(0x0F0, spiv);
 
-            // FIXME: The timer repeatedly counts down at bus frequency
+            // DONE: The timer repeatedly counts down at bus frequency
+            let mut timer = self.read(0x320);
+            timer &= !0xFF;
+            timer |= Interrupts::IrqBase as u32 + Irq::Timer as u32;
+            timer &= !0x10000;
+            timer |= 0x20000;
+            self.write(0x320, timer);
 
-            // FIXME: Disable logical interrupt lines (LINT0, LINT1)
+            // DONE: Disable logical interrupt lines (LINT0, LINT1)
+            self.write(0x350, 0x10000);
+            self.write(0x360, 0x10000);
 
-            // FIXME: Disable performance counter overflow interrupts (PCINT)
+            // DONE: Disable performance counter overflow interrupts (PCINT)
+            self.write(0x340, 0x10000);
 
-            // FIXME: Map error interrupt to IRQ_ERROR.
+            // DONE: Map error interrupt to IRQ_ERROR.
+            let mut lvt_error = self.read(0x370);
+            lvt_error &= !0xFF;
+            lvt_error |= Interrupts::IrqBase as u32 + Irq::Error as u32;
+            self.write(0x370, lvt_error);
 
-            // FIXME: Clear error status register (requires back-to-back writes).
+            // DONE: Clear error status register (requires back-to-back writes).
+            self.write(0x280, 0);
+            self.write(0x280, 0);
 
-            // FIXME: Ack any outstanding interrupts.
+            // DONE: Ack any outstanding interrupts.
+            self.eoi();
 
-            // FIXME: Send an Init Level De-Assert to synchronise arbitration ID's.
+            // DONE: Send an Init Level De-Assert to synchronise arbitration ID's.
+            self.write(0x310, 0);
+            const BCAST: u32 = 1 << 19;
+            const INIT: u32 = 5 << 8;
+            const TMLV: u32 = 1 << 15; // TM = 1, LV = 0
+            self.write(0x300, BCAST | INIT | TMLV); // set ICR 0x300
+            const DS: u32 = 1 << 12;
+            while self.read(0x300) & DS != 0 {} // wait for delivery status
 
-            // FIXME: Enable interrupts on the APIC (but not on the processor).
+            // DONE: Enable interrupts on the APIC (but not on the processor).
+            self.write(0x080, 0);
         }
 
         // NOTE: Try to use bitflags! macro to set the flags.
