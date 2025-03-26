@@ -68,7 +68,7 @@ impl SerialPort {
     /// Receives a byte on the serial port no wait.
     #[allow(clippy::identity_op)]
     pub fn receive(&mut self) -> Option<u8> {
-        // FIXME: Receive a byte on the serial port no wait
+        // DONE: Receive a byte on the serial port no wait
         const PORT: u16 = 0x3F8; // COM1
 
         unsafe {
@@ -81,6 +81,12 @@ impl SerialPort {
                 Some(rax.read())
             }
         }
+    }
+
+    pub fn backspace(&mut self) {
+        self.send(0x08);
+        self.send(0x20);
+        self.send(0x08);
     }
 }
 

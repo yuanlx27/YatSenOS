@@ -1,6 +1,6 @@
 mod apic;
 mod consts;
-mod clock;
+pub mod clock;
 mod serial;
 mod exceptions;
 
@@ -16,8 +16,8 @@ lazy_static! {
             exceptions::register_idt(&mut idt);
             // DONE: clock::register_idt(&mut idt);
             clock::register_idt(&mut idt);
-            // TODO: serial::register_idt(&mut idt);
-            //serial::register_idt(&mut idt);
+            // DONE: serial::register_idt(&mut idt);
+            // serial::register_idt(&mut idt);
         }
         idt
     };
@@ -29,7 +29,7 @@ pub fn init() {
 
     // DONE: check and init APIC
     unsafe {
-        XApic::new(LAPIC_ADDR).cpu_init();
+        XApic::new(physical_to_virtual(LAPIC_ADDR)).cpu_init();
     }
 
     // DONE: enable serial irq with IO APIC (use enable_irq)

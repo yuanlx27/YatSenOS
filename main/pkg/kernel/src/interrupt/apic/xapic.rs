@@ -53,8 +53,8 @@ impl LocalApic for XApic {
             let mut timer = self.read(0x320);
             timer &= !0xFF;
             timer |= Interrupts::IrqBase as u32 + Irq::Timer as u32;
-            timer &= !0x10000;
-            timer |= 0x20000;
+            timer &= !(1 << 16);
+            timer |= 1 << 17;
             self.write(0x320, timer);
 
             // DONE: Disable logical interrupt lines (LINT0, LINT1)
