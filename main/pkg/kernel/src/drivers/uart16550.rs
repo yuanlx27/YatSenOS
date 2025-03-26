@@ -43,6 +43,10 @@ impl SerialPort {
             // If serial is not faulty set it in normal operation mode.
             let mut port: Port<u8> = Port::new(PORT + 4);
             port.write(0x0F);
+
+            // Enable interrupts.
+            let mut port: Port<u8> = Port::new(PORT + 1);
+            port.write(0x01);
         }
     }
 

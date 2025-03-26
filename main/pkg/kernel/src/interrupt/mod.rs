@@ -7,14 +7,15 @@ mod exceptions;
 use apic::*;
 use x86_64::structures::idt::InterruptDescriptorTable;
 use crate::memory::physical_to_virtual;
+use crate::interrupt::consts::*;
 
 lazy_static! {
     static ref IDT: InterruptDescriptorTable = {
         let mut idt = InterruptDescriptorTable::new();
         unsafe {
             exceptions::register_idt(&mut idt);
-            // TODO: clock::register_idt(&mut idt);
-            //clock::register_idt(&mut idt);
+            // DONE: clock::register_idt(&mut idt);
+            clock::register_idt(&mut idt);
             // TODO: serial::register_idt(&mut idt);
             //serial::register_idt(&mut idt);
         }
@@ -26,9 +27,13 @@ lazy_static! {
 pub fn init() {
     IDT.load();
 
-    // FIXME: check and init APIC
+    // DONE: check and init APIC
+    unsafe {
+        XApic::new(LAPIC_ADDR).cpu_init();
+    }
 
-    // FIXME: enable serial irq with IO APIC (use enable_irq)
+    // DONE: enable serial irq with IO APIC (use enable_irq)
+    enable_irq(Irq::Serial0 as u8, 0); // enable IRQ4 for CPU0
 
     info!("Interrupts Initialized.");
 }
