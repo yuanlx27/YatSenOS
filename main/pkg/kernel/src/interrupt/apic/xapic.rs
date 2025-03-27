@@ -6,8 +6,34 @@ use x86::cpuid::CpuId;
 
 use crate::interrupt::consts::{Interrupts, Irq};
 
-/// Default physical address of xAPIC
+// Default physical address of xAPIC
 pub const LAPIC_ADDR: u64 = 0xFEE00000;
+// Local APIC Registers
+pub const TPR: u32          = 0x080;
+pub const SVR: u32          = 0x0F0;
+pub const ESR: u32          = 0x280;
+pub const LVT_TIMER: u32    = 0x320;
+pub const LVT_PCINT: u32    = 0x340;
+pub const LVT_LINT0: u32    = 0x350;
+pub const LVT_LINT1: u32    = 0x360;
+pub const LVT_ERROR: u32    = 0x370;
+pub const ICR: u32          = 0x380;
+pub const DCR: u32          = 0x3E0;
+// Local APIC BitFlags
+bitflags! {
+    pub struct SpuriousFlags: u32 {
+        const ENABLE            = 0x00000100;
+        const VECTOR            = 0x000000FF;
+        const VECTOR_IRQ        = Interrupts::IrqBase as u32 + Irq::Spurious as u32;
+    }
+    pub struct LvtFlags: u32 {
+        const MASKED            = 0x00010000;
+        const PERIODIC          = 0x00020000;
+        const VECTOR            = 0x000000FF;
+        const VECTOR_IRQ_TIMER  = Interrupts::IrqBase as u32 + Irq::Timer as u32;
+        const VECTOR_IRQ_ERROR  = Interrupts::IrqBase as u32 + Irq::Error as u32;
+    }
+}
 
 pub struct XApic {
     addr: u64,
@@ -35,62 +61,58 @@ impl XApic {
 impl LocalApic for XApic {
     /// If this type APIC is supported
     fn support() -> bool {
-        // FIXME: Check CPUID to see if xAPIC is supported.
-        CpuId::new().get_feature_info().unwrap().has_apic()
+        // DONE: Check CPUID to see if xAPIC is supported.
+        CpuId::new().get_feature_info().map(|f| f.has_apic()).unwrap_or(false)
     }
 
     /// Initialize the xAPIC for the current CPU.
     fn cpu_init(&mut self) {
         unsafe {
             // DONE: Enable local APIC; set spurious interrupt vector.
-            let mut spiv = self.read(0x0F0);
-            spiv |= 0x100;
-            spiv &= !0xFF;
-            spiv |= Interrupts::IrqBase as u32 + Irq::Spurious as u32;
-            self.write(0x0F0, spiv);
+            let mut spiv = SpuriousFlags::from_bits_truncate(self.read(SVR));
+            spiv.insert(SpuriousFlags::ENABLE);
+            spiv.remove(SpuriousFlags::VECTOR);
+            spiv.insert(SpuriousFlags::VECTOR_IRQ);
+            self.write(SVR, spiv.bits());
 
+            // Set Initial Count.
+            self.write(ICR, 0x00002000);
+            // Set Timer Divide.
+            self.write(DCR, 0x0000000B);
             // DONE: The timer repeatedly counts down at bus frequency
-            let mut timer = self.read(0x320);
-            timer &= !0xFF;
-            timer |= Interrupts::IrqBase as u32 + Irq::Timer as u32;
-            timer &= !(1 << 16);
-            timer |= 1 << 17;
-            self.write(0x320, timer);
+            let mut timer = LvtFlags::from_bits_truncate(self.read(LVT_TIMER));
+            timer.remove(LvtFlags::MASKED);
+            timer.insert(LvtFlags::PERIODIC);
+            timer.remove(LvtFlags::VECTOR);
+            timer.insert(LvtFlags::VECTOR_IRQ_TIMER);
+            self.write(LVT_TIMER, timer.bits());
 
             // DONE: Disable logical interrupt lines (LINT0, LINT1)
-            self.write(0x350, 0x10000);
-            self.write(0x360, 0x10000);
-
+            self.write(LVT_LINT0, LvtFlags::MASKED.bits());
+            self.write(LVT_LINT1, LvtFlags::MASKED.bits());
             // DONE: Disable performance counter overflow interrupts (PCINT)
-            self.write(0x340, 0x10000);
+            self.write(LVT_PCINT, LvtFlags::MASKED.bits());
 
             // DONE: Map error interrupt to IRQ_ERROR.
-            let mut lvt_error = self.read(0x370);
-            lvt_error &= !0xFF;
-            lvt_error |= Interrupts::IrqBase as u32 + Irq::Error as u32;
-            self.write(0x370, lvt_error);
+            let mut error = LvtFlags::from_bits_truncate(self.read(LVT_ERROR));
+            error.remove(LvtFlags::MASKED);
+            error.remove(LvtFlags::VECTOR);
+            error.insert(LvtFlags::VECTOR_IRQ_ERROR);
+            self.write(LVT_ERROR, error.bits());
 
             // DONE: Clear error status register (requires back-to-back writes).
-            self.write(0x280, 0);
-            self.write(0x280, 0);
+            self.write(ESR, 0);
+            self.write(ESR, 0);
 
             // DONE: Ack any outstanding interrupts.
             self.eoi();
 
             // DONE: Send an Init Level De-Assert to synchronise arbitration ID's.
-            self.write(0x310, 0);
-            const BCAST: u32 = 1 << 19;
-            const INIT: u32 = 5 << 8;
-            const TMLV: u32 = 1 << 15; // TM = 1, LV = 0
-            self.write(0x300, BCAST | INIT | TMLV); // set ICR 0x300
-            const DS: u32 = 1 << 12;
-            while self.read(0x300) & DS != 0 {} // wait for delivery status
+            self.set_icr(0x00088500);
 
             // DONE: Enable interrupts on the APIC (but not on the processor).
-            self.write(0x080, 0);
+            self.write(TPR, 0);
         }
-
-        // NOTE: Try to use bitflags! macro to set the flags.
     }
 
     fn id(&self) -> u32 {

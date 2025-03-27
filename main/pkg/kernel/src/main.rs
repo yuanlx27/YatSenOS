@@ -16,14 +16,12 @@ pub fn kernel_main(boot_info: &'static boot::BootInfo) -> ! {
     info!("Hello World from YatSenOS v2!");
 
     loop {
-        print!("> ");
-
         let input = input::get_line();
+
         match input.trim() {
             "exit" => break,
             _ => {
-                println!("You said: {}", input);
-                println!("The counter value is {}", interrupt::clock::read_counter());
+                println!("🤪: no such command!");
             }
         }
     }

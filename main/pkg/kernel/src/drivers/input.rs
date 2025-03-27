@@ -1,11 +1,7 @@
 use alloc::string::String;
 use crossbeam_queue::ArrayQueue;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Key {
-    Pressed(u8),
-    Released(u8),
-}
+type Key = u8;
 
 lazy_static! {
     static ref INPUT_BUF: ArrayQueue<Key> = ArrayQueue::new(128);
@@ -36,18 +32,19 @@ pub fn pop_key() -> Key {
 pub fn get_line() -> String {
     let mut line = String::with_capacity(128);
     loop {
+        print!("\r\x1B[K> {line}");
+
         match pop_key() {
-            Key::Pressed(b'\n') => {
+            b'\n' | b'\r' => {
                 print!("\n");
                 break
             }
-            Key::Pressed(0x08) | Key::Pressed(0x7F) => {
+            0x08 | 0x7F => {
                 line.pop();
             }
-            Key::Pressed(ch) => {
-                line.push(ch as char);
+            c => {
+                line.push(c as char);
             }
-            _ => {}
         }
     }
     line

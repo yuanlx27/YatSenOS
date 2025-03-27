@@ -18,6 +18,6 @@ pub extern "x86-interrupt" fn serial_handler(_st: InterruptStackFrame) {
 fn receive() {
     // DONE: receive character from uart 16550, put it into INPUT_BUFFER
     if let Some(byte) = get_serial_for_sure().receive() {
-        push_key(Key::Pressed(byte));
+        push_key(byte);
     };
 }

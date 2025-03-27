@@ -14,10 +14,8 @@ lazy_static! {
         let mut idt = InterruptDescriptorTable::new();
         unsafe {
             exceptions::register_idt(&mut idt);
-            // DONE: clock::register_idt(&mut idt);
             clock::register_idt(&mut idt);
-            // DONE: serial::register_idt(&mut idt);
-            // serial::register_idt(&mut idt);
+            serial::register_idt(&mut idt);
         }
         idt
     };
@@ -29,11 +27,12 @@ pub fn init() {
 
     // DONE: check and init APIC
     unsafe {
-        XApic::new(physical_to_virtual(LAPIC_ADDR)).cpu_init();
+        let mut lapic = XApic::new(physical_to_virtual(LAPIC_ADDR));
+        lapic.cpu_init();
     }
 
     // DONE: enable serial irq with IO APIC (use enable_irq)
-    enable_irq(Irq::Serial0 as u8, 0); // enable IRQ4 for CPU0
+    enable_irq(Irq::Serial0 as u8, 0);
 
     info!("Interrupts Initialized.");
 }
