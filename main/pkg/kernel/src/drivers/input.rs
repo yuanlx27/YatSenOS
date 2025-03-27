@@ -30,20 +30,38 @@ pub fn pop_key() -> Key {
 
 #[inline]
 pub fn get_line() -> String {
+    let mut pos: usize = 0;
     let mut line = String::with_capacity(128);
     loop {
+        // Print the prompt line.
         print!("\r\x1B[K> {line}");
+        // Print the cursor (with offset for "> ").
+        print!("\r\x1B[{}C", pos + 2);
 
         match pop_key() {
-            b'\n' | b'\r' => {
+            0x0A | 0x0D => { // break on newline (LF|CR)
                 print!("\n");
                 break
             }
-            0x08 | 0x7F => {
-                line.pop();
+            0x08 | 0x7F => { // backspace (BS|DEL)
+                if pos > 0 {
+                    line.remove(pos - 1);
+                    pos -= 1;
+                }
+            }
+            0x1B => { // escape
+                // Skip a '['.
+                let _ = pop_key();
+
+                match pop_key() {
+                    0x43 => pos += (pos < line.len()) as usize,
+                    0x44 => pos = pos.saturating_sub(1),
+                    _ => {}
+                }
             }
             c => {
-                line.push(c as char);
+                line.insert(pos, c as char);
+                pos += 1;
             }
         }
     }
