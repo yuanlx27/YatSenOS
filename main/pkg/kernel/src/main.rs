@@ -4,8 +4,6 @@
 use ysos::*;
 use ysos_kernel as ysos;
 
-use ysos::interrupt::clock;
-
 extern crate alloc;
 
 #[macro_use]
@@ -24,7 +22,7 @@ pub fn kernel_main(boot_info: &'static boot::BootInfo) -> ! {
             "exit" => break,
             _ => {
                 println!("🤪: no such command!");
-                println!("Current clock: {} ticks\n", clock::read_counter());
+                println!("Current clock: {} ticks\n", interrupt::clock::read_counter());
             }
         }
     }

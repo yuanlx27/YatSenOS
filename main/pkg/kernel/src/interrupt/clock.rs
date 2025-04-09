@@ -10,7 +10,9 @@ pub unsafe fn register_idt(idt: &mut InterruptDescriptorTable) {
 
 pub extern "x86-interrupt" fn clock_handler(_sf: InterruptStackFrame) {
     x86_64::instructions::interrupts::without_interrupts(|| {
-        inc_counter();
+        if inc_counter() % 0x10000 == 0 {
+            // info!("Tick! @{}", read_counter());
+        }
         super::ack();
     });
 }
