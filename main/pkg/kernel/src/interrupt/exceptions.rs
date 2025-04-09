@@ -6,16 +6,11 @@ use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame, Pag
 #[allow(unsafe_op_in_unsafe_fn)]
 pub unsafe fn register_idt(idt: &mut InterruptDescriptorTable) {
     // Divide Error
-    idt.divide_error
-        .set_handler_fn(divide_error_handler);
+    idt.divide_error.set_handler_fn(divide_error_handler);
     // Double Fault
-    idt.double_fault
-        .set_handler_fn(double_fault_handler)
-        .set_stack_index(gdt::DOUBLE_FAULT_IST_INDEX);
+    idt.double_fault.set_handler_fn(double_fault_handler).set_stack_index(gdt::DOUBLE_FAULT_IST_INDEX);
     // Page Fault
-    idt.page_fault
-        .set_handler_fn(page_fault_handler)
-        .set_stack_index(gdt::PAGE_FAULT_IST_INDEX);
+    idt.page_fault.set_handler_fn(page_fault_handler).set_stack_index(gdt::PAGE_FAULT_IST_INDEX);
 
     // TODO: you should handle more exceptions here
     // especially general protection fault (GPF)
