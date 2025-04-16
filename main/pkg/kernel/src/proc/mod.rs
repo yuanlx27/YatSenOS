@@ -35,7 +35,7 @@ pub fn init() {
     trace!("Init kernel vm: {:#?}", proc_vm);
 
     // kernel process
-    let kproc = { /* FIXME: create kernel process */ };
+    let kproc = Process::new(String::from("kernel"), None, Some(proc_vm), Some(ProcessData::new()));
     manager::init(kproc);
 
     info!("Process Manager Initialized.");
