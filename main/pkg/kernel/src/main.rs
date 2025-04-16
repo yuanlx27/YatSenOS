@@ -6,24 +6,35 @@ use ysos_kernel as ysos;
 
 extern crate alloc;
 
-#[macro_use]
-extern crate log;
-
 boot::entry_point!(kernel_main);
 
 pub fn kernel_main(boot_info: &'static boot::BootInfo) -> ! {
     ysos::init(boot_info);
-    info!("Hello World from YatSenOS v2!");
+
+    // FIXME: update lib.rs to pass following tests
+
+    // 1. run some (about 5) "test", show these threads are running concurrently
+
+    // 2. run "stack", create a huge stack, handle page fault properly
+
+    let mut test_num = 0;
 
     loop {
-        let input = input::get_line();
-
-        match input.trim() {
+        print!("[>] ");
+        let line = input::get_line();
+        match line.trim() {
             "exit" => break,
-            _ => {
-                println!("🤪: no such command!");
-                println!("Current clock: {} ticks\n", interrupt::clock::read_counter());
+            "ps" => {
+                ysos::proc::print_process_list();
             }
+            "stack" => {
+                ysos::new_stack_test_thread();
+            }
+            "test" => {
+                ysos::new_test_thread(format!("{}", test_num).as_str());
+                test_num += 1;
+            }
+            _ => println!("[=] {}", line),
         }
     }
 
