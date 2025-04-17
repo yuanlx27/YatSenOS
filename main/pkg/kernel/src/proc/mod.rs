@@ -5,11 +5,14 @@ mod paging;
 mod pid;
 mod process;
 mod processor;
+mod vm;
 
 use manager::*;
 use process::*;
+use vm::*;
 use crate::memory::PAGE_SIZE;
 
+use alloc::sync::Arc;
 use alloc::string::String;
 pub use context::ProcessContext;
 pub use paging::PageTableContext;
@@ -47,6 +50,8 @@ pub fn switch(context: &mut ProcessContext) {
         //      - save current process's context
         //      - handle ready queue update
         //      - restore next process's context
+        let process_manager = get_process_manager();
+        process_manager.save_current(context);
     });
 }
 
