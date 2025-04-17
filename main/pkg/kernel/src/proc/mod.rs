@@ -1,6 +1,6 @@
 mod context;
 mod data;
-mod manager;
+pub mod manager;
 mod paging;
 mod pid;
 mod process;
@@ -9,18 +9,18 @@ mod vm;
 
 use manager::*;
 use process::*;
-use vm::*;
-use crate::memory::PAGE_SIZE;
+use vm::ProcessVm;
+//use crate::memory::PAGE_SIZE;
 
-use alloc::sync::Arc;
 use alloc::string::String;
+use alloc::sync::Arc;
 pub use context::ProcessContext;
-pub use paging::PageTableContext;
 pub use data::ProcessData;
+pub use paging::PageTableContext;
 pub use pid::ProcessId;
 
-use x86_64::structures::idt::PageFaultErrorCode;
 use x86_64::VirtAddr;
+use x86_64::structures::idt::PageFaultErrorCode;
 pub const KERNEL_PID: ProcessId = ProcessId(1);
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -38,7 +38,7 @@ pub fn init() {
     trace!("Init kernel vm: {:#?}", proc_vm);
 
     // kernel process
-    let kproc = Process::new(String::from("kernel"), None, Some(proc_vm), Some(ProcessData::new()));
+    let kproc = Process::new(String::from("kernel"), None, Some(proc_vm), None);
     manager::init(kproc);
 
     info!("Process Manager Initialized.");
@@ -46,12 +46,14 @@ pub fn init() {
 
 pub fn switch(context: &mut ProcessContext) {
     x86_64::instructions::interrupts::without_interrupts(|| {
-        // FIXME: switch to the next process
-        //      - save current process's context
-        //      - handle ready queue update
-        //      - restore next process's context
-        let process_manager = get_process_manager();
-        process_manager.save_current(context);
+        // DONE: switch to the next process
+        //   - save current process's context
+        //   - handle ready queue update
+        //   - restore next process's context
+        let manager = get_process_manager();
+        manager.save_current(context);
+        manager.push_ready(processor::get_pid());
+        manager.switch_next(context);
     });
 }
 
@@ -70,7 +72,8 @@ pub fn print_process_list() {
 
 pub fn env(key: &str) -> Option<String> {
     x86_64::instructions::interrupts::without_interrupts(|| {
-        // FIXME: get current process's environment variable
+        // DONE: get current process's environment variable
+        get_process_manager().current().read().env(key)
     })
 }
 

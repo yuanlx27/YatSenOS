@@ -1,16 +1,15 @@
 use super::*;
-use crate::memory::{
-    self,
-    allocator::{ALLOCATOR, HEAP_SIZE},
-    get_frame_alloc_for_sure, PAGE_SIZE,
-};
+//use crate::memory::{
+//    self, PAGE_SIZE,
+//    allocator::{ALLOCATOR, HEAP_SIZE},
+//    get_frame_alloc_for_sure,
+//};
 use alloc::{collections::*, format};
 use spin::{Mutex, RwLock};
 
 pub static PROCESS_MANAGER: spin::Once<ProcessManager> = spin::Once::new();
 
 pub fn init(init: Arc<Process>) {
-
     // DONE: set init process as Running
     init.write().resume();
 
@@ -57,13 +56,12 @@ impl ProcessManager {
     }
 
     #[inline]
-    fn get_proc(&self, pid: &ProcessId) -> Option<Arc<Process>> {
+    pub fn get_proc(&self, pid: &ProcessId) -> Option<Arc<Process>> {
         self.processes.read().get(pid).cloned()
     }
 
     pub fn current(&self) -> Arc<Process> {
-        self.get_proc(&processor::get_pid())
-            .expect("No current process")
+        self.get_proc(&processor::get_pid()).expect("No current process")
     }
 
     pub fn save_current(&self, context: &ProcessContext) {
@@ -75,16 +73,28 @@ impl ProcessManager {
     }
 
     pub fn switch_next(&self, context: &mut ProcessContext) -> ProcessId {
-        // FIXME: fetch the next process from ready queue
+        // DONE: fetch the next process from ready queue
+        let mut next_pid = processor::get_pid();
 
-        // FIXME: check if the next process is ready,
-        //        continue to fetch if not ready
+        // DONE: check if the next process is ready, continue to fetch if not ready
+        while let Some(pid) = self.ready_queue.lock().pop_front() {
+            let proc = self.get_proc(&pid).unwrap();
 
-        // FIXME: restore next process's context
+            if proc.read().is_ready() {
+                next_pid = pid;
+                break;
+            }
+        }
 
-        // FIXME: update processor's current pid
+        // DONE: restore next process's context
+        let next_proc = self.get_proc(&next_pid).unwrap();
+        next_proc.write().restore(context);
 
-        // FIXME: return next process's pid
+        // DONE: update processor's current pid
+        processor::set_pid(next_pid);
+
+        // DONE: return next process's pid
+        next_pid
     }
 
     pub fn spawn_kernel_thread(
@@ -97,17 +107,23 @@ impl ProcessManager {
         let page_table = kproc.read().clone_page_table();
         let proc_vm = Some(ProcessVm::new(page_table));
         let proc = Process::new(name, Some(Arc::downgrade(&kproc)), proc_vm, proc_data);
+        let pid = proc.pid();
 
         // alloc stack for the new process base on pid
         let stack_top = proc.alloc_init_stack();
 
-        // FIXME: set the stack frame
+        // DONE: set the stack frame
+        let mut context = ProcessContext::default();
+        context.init_stack_frame(entry, stack_top);
 
-        // FIXME: add to process map
+        // DONE: add to process map
+        self.add_proc(pid, proc);
 
-        // FIXME: push to ready queue
+        // DONE: push to ready queue
+        self.push_ready(pid);
 
-        // FIXME: return new process pid
+        // DONE: return new process pid
+        pid
     }
 
     pub fn kill_current(&self, ret: isize) {
@@ -116,7 +132,6 @@ impl ProcessManager {
 
     pub fn handle_page_fault(&self, addr: VirtAddr, err_code: PageFaultErrorCode) -> bool {
         // FIXME: handle page fault
-
         false
     }
 
