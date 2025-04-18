@@ -54,7 +54,9 @@ fn wait(pid: ProcessId) {
     loop {
         // DONE: try to get the status of the process
         // HINT: it's better to use the exit code
-        let proc = manager::get_process_manager().get_proc(&pid).unwrap();
+        let Some(proc) = manager::get_process_manager().get_proc(&pid) else {
+            break;
+        };
         let code = proc.read().exit_code();
 
         if code.is_none() {
