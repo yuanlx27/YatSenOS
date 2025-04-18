@@ -1,14 +1,13 @@
 use alloc::format;
 use x86_64::{
-    structures::paging::{page::*, *},
+    structures::paging::*,
     VirtAddr,
 };
 
 use crate::{humanized_size, memory::*};
 
 pub mod stack;
-
-use self::stack::*;
+pub use stack::*;
 
 use super::{PageTableContext, ProcessId};
 
@@ -34,12 +33,15 @@ impl ProcessVm {
     pub fn init_kernel_vm(mut self) -> Self {
         // TODO: record kernel code usage
         self.stack = Stack::kstack();
+
         self
     }
 
     pub fn init_proc_stack(&mut self, pid: ProcessId) -> VirtAddr {
-        // FIXME: calculate the stack for pid
-        // FIXME: calculate the stack for pid
+        // DONE: calculate the stack for pid
+        let stack_bot_addr = STACK_INIT_BOT - (pid.0 as u64 - 1) * STACK_MAX_SIZE;
+        let stack_top_addr = VirtAddr::new(stack_bot_addr - STACK_DEF_SIZE);
+
         stack_top_addr
     }
 
