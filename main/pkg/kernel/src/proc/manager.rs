@@ -107,21 +107,18 @@ impl ProcessManager {
         let page_table = kproc.read().clone_page_table();
         let proc_vm = Some(ProcessVm::new(page_table));
         let proc = Process::new(name, Some(Arc::downgrade(&kproc)), proc_vm, proc_data);
-        let pid = proc.pid();
 
         // alloc stack for the new process base on pid
         let stack_top = proc.alloc_init_stack();
 
         // DONE: set the stack frame
-        let mut context = ProcessContext::default();
-        context.init_stack_frame(entry, stack_top);
+        proc.write().init_stack_frame(entry, stack_top);
 
+        let pid = proc.pid();
         // DONE: add to process map
         self.add_proc(pid, proc);
-
         // DONE: push to ready queue
         self.push_ready(pid);
-
         // DONE: return new process pid
         pid
     }
