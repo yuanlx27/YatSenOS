@@ -20,7 +20,6 @@ pub fn kernel_main(boot_info: &'static boot::BootInfo) -> ! {
     let mut test_num = 0;
 
     loop {
-        print!("[>] ");
         let line = input::get_line();
         match line.trim() {
             "exit" => break,
@@ -34,7 +33,7 @@ pub fn kernel_main(boot_info: &'static boot::BootInfo) -> ! {
                 ysos::new_test_thread(format!("{}", test_num).as_str());
                 test_num += 1;
             }
-            _ => println!("[=] {}", line),
+            _ => (),
         }
     }
 
