@@ -51,7 +51,7 @@ impl ProcessManager {
     }
 
     #[inline]
-    fn add_proc(&self, pid: ProcessId, proc: Arc<Process>) {
+    pub fn add_proc(&self, pid: ProcessId, proc: Arc<Process>) {
         self.processes.write().insert(pid, proc);
     }
 
@@ -67,7 +67,6 @@ impl ProcessManager {
     pub fn save_current(&self, context: &ProcessContext) {
         // DONE: update current process's tick count
         self.current().write().tick();
-
         // DONE: save current process's context
         self.current().write().save(context);
     }
@@ -128,8 +127,21 @@ impl ProcessManager {
     }
 
     pub fn handle_page_fault(&self, addr: VirtAddr, err_code: PageFaultErrorCode) -> bool {
-        // FIXME: handle page fault
-        false
+        // DONE: handle page fault
+        if err_code.contains(PageFaultErrorCode::PROTECTION_VIOLATION) {
+            return false;
+        }
+
+        let proc = self.current();
+        trace!("Page Fault! Checking if {:#x} is on current process's stack", addr);
+
+        if proc.pid() == KERNEL_PID {
+            info!("Page Fault on kernel at {:#x}", addr);
+        }
+
+        proc.write().handle_page_fault(addr);
+
+        true
     }
 
     pub fn kill(&self, pid: ProcessId, ret: isize) {

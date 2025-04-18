@@ -1,5 +1,5 @@
 use crate::memory::*;
-use x86_64::VirtAddr;
+//use x86_64::VirtAddr;
 use x86_64::registers::control::Cr2;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode};
 
@@ -46,12 +46,16 @@ pub extern "x86-interrupt" fn page_fault_handler(
     stack_frame: InterruptStackFrame,
     err_code: PageFaultErrorCode,
 ) {
-    panic!(
-        "EXCEPTION: PAGE FAULT, ERROR_CODE: {:?}\n\nTrying to access: {:#x}\n{:#?}",
-        err_code,
-        Cr2::read().unwrap_or(VirtAddr::new_truncate(0xdeadbeef)),
-        stack_frame
-    );
+    let addr = Cr2::read().unwrap();
+
+    if !crate::proc::handle_page_fault(addr, err_code) {
+        warn!(
+            "EXCEPTION: PAGE FAULT, ERROR_CODE: {:?}\n\nTrying to access: {:#x}\n{:#?}",
+            err_code, addr, stack_frame
+        );
+        crate::proc::current_process_info();
+        panic!("Cannot handle page fault!");
+    }
 }
 
 pub extern "x86-interrupt" fn general_protection_fault_handler(

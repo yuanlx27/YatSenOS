@@ -70,6 +70,10 @@ pub fn print_process_list() {
     })
 }
 
+pub fn current_process_info() {
+    debug!("{:#?}", get_process_manager().current());
+}
+
 pub fn env(key: &str) -> Option<String> {
     x86_64::instructions::interrupts::without_interrupts(|| {
         // DONE: get current process's environment variable

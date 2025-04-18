@@ -1,4 +1,5 @@
 use alloc::format;
+use elf::map_range;
 use x86_64::{
     structures::paging::*,
     VirtAddr,
@@ -39,10 +40,19 @@ impl ProcessVm {
 
     pub fn init_proc_stack(&mut self, pid: ProcessId) -> VirtAddr {
         // DONE: calculate the stack for pid
-        let stack_bot_addr = STACK_INIT_BOT - (pid.0 as u64 - 1) * STACK_MAX_SIZE;
-        let stack_top_addr = VirtAddr::new(stack_bot_addr - STACK_DEF_SIZE);
+        let stack_top_addr = STACK_INIT_TOP - (pid.0 as u64 - 1) * STACK_MAX_SIZE;
+        let frame_allocator = &mut *get_frame_alloc_for_sure();
 
-        stack_top_addr
+        map_range(stack_top_addr, STACK_DEF_PAGE, &mut self.page_table.mapper(), frame_allocator).unwrap();
+
+        let stack_top_vaddr = VirtAddr::new(stack_top_addr);
+
+        self.stack = Stack::new(
+            Page::containing_address(stack_top_vaddr),
+            STACK_DEF_PAGE,
+        );
+
+        stack_top_vaddr
     }
 
     pub fn handle_page_fault(&mut self, addr: VirtAddr) -> bool {
