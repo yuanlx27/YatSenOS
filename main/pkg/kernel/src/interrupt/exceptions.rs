@@ -22,6 +22,8 @@ pub unsafe fn register_idt(idt: &mut InterruptDescriptorTable) {
     // TODO: you should handle more exceptions here
     // especially general protection fault (GPF)
     // see: https://wiki.osdev.org/Exceptions
+    idt.general_protection_fault
+        .set_handler_fn(general_protection_fault_handler);
 }
 
 pub extern "x86-interrupt" fn debug_handler(stack_frame: InterruptStackFrame) {
