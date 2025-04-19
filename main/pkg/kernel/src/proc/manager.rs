@@ -129,6 +129,23 @@ impl ProcessManager {
     pub fn handle_page_fault(&self, addr: VirtAddr, err_code: PageFaultErrorCode) -> bool {
         // DONE: handle page fault
         if err_code.contains(PageFaultErrorCode::PROTECTION_VIOLATION) {
+            error!("Page Fault! Protection Violation at {:#x}", addr);
+            return false;
+        }
+        if err_code.contains(PageFaultErrorCode::MALFORMED_TABLE) {
+            error!("Page Fault! Malformed Table at {:#x}", addr);
+            return false;
+        }
+        if err_code.contains(PageFaultErrorCode::SHADOW_STACK) {
+            error!("Page Fault! Shadow Stack access at {:#x}", addr);
+            return false;
+        }
+        if err_code.contains(PageFaultErrorCode::SGX) {
+            error!("Page Fault! Software Guard Extensions violation at {:#x}", addr);
+            return false;
+        }
+        if err_code.contains(PageFaultErrorCode::RMP) {
+            error!("Page Fault! Restricted Memory Protection violation at {:#x}", addr);
             return false;
         }
 
