@@ -173,7 +173,7 @@ impl ProcessInner {
         self.status = ProgramStatus::Dead;
         // DONE: take and drop unused resources
         self.proc_data.take();
-        self.proc_vm.take();
+        //self.proc_vm.take();
     }
 }
 
