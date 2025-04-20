@@ -148,7 +148,9 @@ impl ProcessInner {
         // DONE: save the process's context
         self.context.save(context);
         // DONE: mark the process as ready
-        self.status = ProgramStatus::Ready;
+        if self.status == ProgramStatus::Running {
+            self.status = ProgramStatus::Ready;
+        }
     }
 
     /// Restore the process's context
@@ -173,7 +175,7 @@ impl ProcessInner {
         self.status = ProgramStatus::Dead;
         // DONE: take and drop unused resources
         self.proc_data.take();
-        //self.proc_vm.take();
+        self.proc_vm.take();
     }
 }
 

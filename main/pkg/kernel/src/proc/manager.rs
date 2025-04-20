@@ -65,10 +65,23 @@ impl ProcessManager {
     }
 
     pub fn save_current(&self, context: &ProcessContext) {
+        let proc = self.current();
+        let pid = proc.pid();
+
+        let mut inner = proc.write();
         // DONE: update current process's tick count
-        self.current().write().tick();
+        inner.tick();
         // DONE: save current process's context
-        self.current().write().save(context);
+        inner.save(context);
+
+        let status = inner.status();
+        drop(inner);
+
+        if status != ProgramStatus::Dead {
+            self.push_ready(pid);
+        } else {
+            debug!("Process #{} {:#?} is dead.", pid, proc);
+        }
     }
 
     pub fn switch_next(&self, context: &mut ProcessContext) -> ProcessId {
@@ -109,11 +122,16 @@ impl ProcessManager {
 
         // alloc stack for the new process base on pid
         let stack_top = proc.alloc_init_stack();
+        let mut inner = proc.write();
 
         // DONE: set the stack frame
-        proc.write().init_stack_frame(entry, stack_top);
+        inner.pause();
+        inner.init_stack_frame(entry, stack_top);
 
         let pid = proc.pid();
+        info!("Spawn Process #{}: {}", pid, inner.name());
+        drop(inner);
+
         // DONE: add to process map
         self.add_proc(pid, proc);
         // DONE: push to ready queue

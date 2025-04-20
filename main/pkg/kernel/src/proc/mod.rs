@@ -52,7 +52,7 @@ pub fn switch(context: &mut ProcessContext) {
         //   - restore next process's context
         let manager = get_process_manager();
         manager.save_current(context);
-        manager.push_ready(processor::get_pid());
+        //manager.push_ready(processor::get_pid());
         manager.switch_next(context);
     });
 }
