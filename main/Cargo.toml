@@ -1,10 +1,6 @@
 [workspace]
 resolver = "2"
-members = [
-    "pkg/elf",
-    "pkg/boot",
-    "pkg/kernel"
-]
+members = ["pkg/elf", "pkg/boot", "pkg/kernel"]
 exclude = ["pkg/app/config", "pkg/app/.cargo"]
 
 [workspace.package]
@@ -24,6 +20,7 @@ spin = "0.9"
 x86 = "0.52"
 x86_64 = "0.15"
 log = "0.4"
+owo-colors = "4.2"
 bit_field = "0.10"
 bitflags = "2.3"
 libm = "0.2"
@@ -32,7 +29,9 @@ linked_list_allocator = "0.10"
 arrayvec = { version = "0.7", default-features = false }
 uefi = { version = "0.34", default-features = false }
 lazy_static = { version = "1.4", features = ["spin_no_std"] }
-crossbeam-queue = { version = "0.3", default-features = false, features = ["alloc"] }
+crossbeam-queue = { version = "0.3", default-features = false, features = [
+    "alloc",
+] }
 volatile = { version = "0.5.0", default-features = false }
 
 # Local dependencies
