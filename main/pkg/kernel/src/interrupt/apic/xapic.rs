@@ -79,7 +79,7 @@ impl LocalApic for XApic {
             self.write(LapicRegister::SVR, spiv.bits());
 
             // Set Initial Count.
-            self.write(LapicRegister::ICR, 0x00002000);
+            self.write(LapicRegister::ICR, 0x00020000);
             // Set Timer Divide.
             self.write(LapicRegister::DCR, 0x0000000B);
             // DONE: The timer repeatedly counts down at bus frequency
