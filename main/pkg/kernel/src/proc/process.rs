@@ -161,7 +161,9 @@ impl ProcessInner {
         // DONE: restore the process's page table
         self.vm().page_table.load();
         // DONE: mark the process as running
-        self.status = ProgramStatus::Running;
+        if self.status == ProgramStatus::Ready {
+            self.status = ProgramStatus::Running;
+        }
     }
 
     pub fn parent(&self) -> Option<Arc<Process>> {
