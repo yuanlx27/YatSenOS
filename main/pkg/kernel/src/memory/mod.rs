@@ -1,8 +1,7 @@
 pub mod address;
 pub mod allocator;
-mod frames;
-mod user;
-
+pub mod frames;
+pub mod user;
 pub mod gdt;
 
 pub use address::*;

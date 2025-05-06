@@ -2,6 +2,7 @@ use core::alloc::Layout;
 
 use crate::proc::*;
 use crate::utils::*;
+use crate::memory::*;
 
 use super::SyscallArgs;
 
@@ -17,18 +18,28 @@ pub fn spawn_process(args: &SyscallArgs) -> usize {
 }
 
 pub fn sys_write(args: &SyscallArgs) -> usize {
-    // FIXME: get buffer and fd by args
-    //       - core::slice::from_raw_parts
-    // FIXME: call proc::write -> isize
-    // FIXME: return the result as usize
+    // DONE: get buffer and fd by args
+    //      - core::slice::from_raw_parts
+    // DONE: call proc::write -> isize
+    // DONE: return the result as usize
+    let buf = match as_user_slice(args.arg1, args.arg2) {
+        Some(buf) => buf,
+        None => return usize::MAX,
+    };
 
-    0
+    let fd = args.arg0 as u8;
+    write(fd, buf) as usize
 }
 
 pub fn sys_read(args: &SyscallArgs) -> usize {
-    // FIXME: just like sys_write
+    // DONE: just like sys_write
+    let buf = match as_user_slice_mut(args.arg1, args.arg2) {
+        Some(buf) => buf,
+        None => return usize::MAX,
+    };
 
-    0
+    let fd = args.arg0 as u8;
+    read(fd, buf) as usize
 }
 
 pub fn exit_process(args: &SyscallArgs, context: &mut ProcessContext) {

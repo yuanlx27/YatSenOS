@@ -69,6 +69,15 @@ impl ProcessManager {
         self.get_proc(&processor::get_pid()).expect("No current process")
     }
 
+    #[inline]
+    pub fn read(&self, fd: u8, buf: &mut [u8]) -> isize {
+        self.current().read().read(fd, buf)
+    }
+    #[inline]
+    pub fn write(&self, fd: u8, buf: &[u8]) -> isize {
+        self.current().read().write(fd, buf)
+    }
+
     pub fn spawn(
         &self,
         elf: &ElfFile,

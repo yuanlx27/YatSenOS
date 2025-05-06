@@ -53,7 +53,7 @@ pub fn dispatcher(context: &mut ProcessContext) {
         // fd: arg0 as u8, buf: &[u8] (ptr: arg1 as *const u8, len: arg2)
         Syscall::Read => { /* FIXME: read from fd & return length */},
         // fd: arg0 as u8, buf: &[u8] (ptr: arg1 as *const u8, len: arg2)
-        Syscall::Write => { /* FIXME: write to fd & return length */},
+        Syscall::Write => context.set_rax(sys_write(&args)),
 
         // None -> pid: u16
         Syscall::GetPid => { /* FIXME: get current pid */ },
