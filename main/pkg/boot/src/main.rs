@@ -38,7 +38,16 @@ fn main() -> uefi::Status {
 
     set_entry(elf.header.pt2.entry_point() as usize);
 
-    // 3. Load MemoryMap
+    // 3. Load apps
+    let apps = if config.load_apps {
+        info!("Loading apps...");
+        Some(load_apps())
+    } else {
+        info!("Skip loading apps");
+        None
+    };
+
+    // 4. Load MemoryMap
     let mmap = uefi::boot::memory_map(uefi::boot::MemoryType::LOADER_DATA).expect("Failed to get memory map");
 
     let max_phys_addr = mmap
@@ -65,20 +74,20 @@ fn main() -> uefi::Status {
     );
 
     // DONE: load and map the kernel elf file
-    let _ = elf::load_elf(
+    elf::load_elf(
         &elf,
         config.physical_memory_offset,
         &mut page_table,
         &mut UEFIFrameAllocator,
-    );
+    ).expect("Failed to load kernel ELF");
 
     // DONE: map kernel stack
-    let _ = elf::map_range(
+    elf::map_range(
         config.kernel_stack_address,
         config.kernel_stack_size,
         &mut page_table,
         &mut UEFIFrameAllocator,
-    );
+    ).expect("Failed to map kernel stack");
 
     // DONE: recover write protect (Cr0)
     unsafe {
@@ -103,6 +112,7 @@ fn main() -> uefi::Status {
         memory_map: mmap.entries().copied().collect(),
         physical_memory_offset: config.physical_memory_offset,
         system_table,
+        loaded_apps: apps,
     };
 
     // align stack to 8 bytes

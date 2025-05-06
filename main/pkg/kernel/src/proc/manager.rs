@@ -1,22 +1,19 @@
 use super::*;
-//use crate::memory::{
-//    self, PAGE_SIZE,
-//    allocator::{ALLOCATOR, HEAP_SIZE},
-//    get_frame_alloc_for_sure,
-//};
+
+use boot::AppListRef;
+
 use alloc::{collections::*, format};
 use spin::{Mutex, RwLock};
 
 pub static PROCESS_MANAGER: spin::Once<ProcessManager> = spin::Once::new();
 
-pub fn init(init: Arc<Process>) {
+pub fn init(init: Arc<Process>, app_list: AppListRef) {
     // DONE: set init process as Running
     init.write().resume();
-
     // DONE: set processor's current pid to init's pid
     processor::set_pid(init.pid());
 
-    PROCESS_MANAGER.call_once(|| ProcessManager::new(init));
+    PROCESS_MANAGER.call_once(|| ProcessManager::new(init ,app_list));
 }
 
 pub fn get_process_manager() -> &'static ProcessManager {
@@ -28,10 +25,11 @@ pub fn get_process_manager() -> &'static ProcessManager {
 pub struct ProcessManager {
     processes: RwLock<BTreeMap<ProcessId, Arc<Process>>>,
     ready_queue: Mutex<VecDeque<ProcessId>>,
+    app_list: AppListRef,
 }
 
 impl ProcessManager {
-    pub fn new(init: Arc<Process>) -> Self {
+    pub fn new(init: Arc<Process>, app_list: AppListRef) -> Self {
         let mut processes = BTreeMap::new();
         let ready_queue = VecDeque::new();
         let pid = init.pid();
@@ -42,6 +40,7 @@ impl ProcessManager {
         Self {
             processes: RwLock::new(processes),
             ready_queue: Mutex::new(ready_queue),
+            app_list,
         }
     }
 
@@ -58,6 +57,10 @@ impl ProcessManager {
     #[inline]
     pub fn get_proc(&self, pid: &ProcessId) -> Option<Arc<Process>> {
         self.processes.read().get(pid).cloned()
+    }
+
+    pub fn app_list(&self) -> AppListRef {
+        self.app_list
     }
 
     pub fn current(&self) -> Arc<Process> {
