@@ -2,7 +2,6 @@
 #![no_main]
 
 use lib::*;
-
 extern crate lib;
 
 fn main() -> isize {

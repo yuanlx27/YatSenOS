@@ -7,8 +7,8 @@ macro_rules! entry {
         #[unsafe(export_name = "_start")]
         pub extern "C" fn __impl_start() {
             let ret = $fn();
-            // FIXME: after syscall, add lib::sys_exit(ret);
-            loop {}
+            // DONE: after syscall, add lib::sys_exit(ret);
+            sys_exit(ret);
         }
     };
 }
@@ -32,6 +32,6 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
         info.message()
     );
 
-    // FIXME: after syscall, add lib::sys_exit(1);
-    loop {}
+    // DONE: after syscall, add lib::sys_exit(1);
+    crate::sys_exit(1)
 }
