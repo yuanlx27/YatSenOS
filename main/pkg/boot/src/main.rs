@@ -6,7 +6,6 @@
 extern crate log;
 extern crate alloc;
 
-use uefi::{entry, Status};
 use x86_64::registers::control::*;
 use xmas_elf::ElfFile;
 use ysos_boot::*;
@@ -14,24 +13,28 @@ use uefi::mem::memory_map::MemoryMap;
 
 const CONFIG_PATH: &str = "\\EFI\\BOOT\\boot.conf";
 
-#[entry]
-fn efi_main() -> Status {
+#[uefi::entry]
+fn main() -> uefi::Status {
+
     uefi::helpers::init().expect("Failed to initialize utilities");
 
     log::set_max_level(log::LevelFilter::Info);
     info!("Running UEFI bootloader...");
 
     // 1. Load config
-    let mut file = open_file(CONFIG_PATH);
-    let buf = load_file(&mut file);
-    let config = config::Config::parse(buf);
-
+    let config = {
+        let mut file = open_file(CONFIG_PATH);
+        let buf = load_file(&mut file);
+        config::Config::parse(buf)
+    };
     info!("Config: {:#x?}", config);
 
     // 2. Load ELF files
-    let mut file = open_file(config.kernel_path);
-    let buf = load_file(&mut file);
-    let elf = ElfFile::new(buf).unwrap();
+    let elf = {
+        let mut file = open_file(config.kernel_path);
+        let buf = load_file(&mut file);
+        ElfFile::new(buf).unwrap()
+    };
 
     set_entry(elf.header.pt2.entry_point() as usize);
 
