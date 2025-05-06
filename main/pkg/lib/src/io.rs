@@ -86,7 +86,7 @@ impl Stdin {
                     if Self::is_utf8(ch) {
                         let utf_char = char::from_u32(self.to_utf8(ch)).unwrap();
                         string.push(utf_char);
-                        print! {"{}", utf_char};
+                        print!("{}", utf_char);
                     } else {
                         string.push(ch as char);
                         print!("{}", ch as char);

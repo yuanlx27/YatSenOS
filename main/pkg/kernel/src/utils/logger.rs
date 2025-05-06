@@ -7,7 +7,7 @@ pub fn init() {
     log::set_logger(&LOGGER).unwrap();
 
     // DONE: Configure the logger
-    log::set_max_level(log::LevelFilter::Trace);
+    log::set_max_level(log::LevelFilter::Debug);
 
     info!("Logger Initialized.");
 }

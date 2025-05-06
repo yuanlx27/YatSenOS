@@ -1,62 +1,52 @@
 #![no_std]
 #![no_main]
 
-extern crate alloc;
-
-mod services;
-mod utils;
-
-use alloc::string::ToString;
-use alloc::vec::Vec;
 use lib::*;
-
 extern crate lib;
 
+use alloc::vec::Vec;
+
 fn main() -> isize {
-    utils::show_welcome_text();
     loop {
-        utils::print_prompt();
+        print!("> ");
+
         let input = stdin().read_line();
-        let line: Vec<&str> = input.trim().split(' ').collect();
-        match line[0] {
-            "\x04" | "exit" => {
-                println!();
+        let args: Vec<&str> = input.split_whitespace().collect();
+
+        if args.is_empty() {
+            continue;
+        }
+
+        match args[0] {
+            "exit" | "\x04" => {
                 break;
-            }
-            "ps" => sys_stat(),
-            "ls" => sys_list_app(),
+            },
             "exec" => {
-                if line.len() < 2 {
-                    println!("Usage: exec <file>");
+                if args.len() == 1 {
+                    println!("Usage: exec <app>");
                     continue;
                 }
 
-                services::exec(line[1]);
+                let name = args[1];
+                let pid = sys_spawn(name);
+                let ret = sys_wait_pid(pid);
+                println!("Process {}#{} exited with code {}", name, pid, ret);
+            },
+            "list" => {
+                if args.len() == 1 {
+                    println!("Usage: list apps|proc");
+                    continue;
+                }
+
+                match args[1] {
+                    "apps" => sys_list_app(),
+                    "proc" => sys_stat(),
+                    _ => println!("Usage: list apps|proc"),
+                }
             }
-            "kill" => {
-                if line.len() < 2 {
-                    println!("Usage: kill <pid>");
-                    continue;
-                }
-                let pid = line[1].to_string().parse::<u16>();
-
-                if pid.is_err() {
-                    errln!("Cannot parse pid");
-                    continue;
-                }
-
-                services::kill(pid.unwrap());
-            }
-            "help" => utils::show_help_text(),
-            "clear" => print!("\x1b[1;1H\x1b[2J"),
             _ => {
-                if line[0].is_empty() {
-                    println!();
-                    continue;
-                }
-                println!("Command not found: {}", line[0]);
-                println!("Type 'help' to see available commands.");
-            }
+                println!("Command not found: {}", args[0]);
+            },
         }
     }
 
