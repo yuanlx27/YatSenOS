@@ -97,6 +97,10 @@ pub fn print_process_list() {
     })
 }
 
+pub fn current_pid() -> ProcessId {
+    x86_64::instructions::interrupts::without_interrupts(processor::get_pid)
+}
+
 pub fn current_process_info() {
     debug!("{:#?}", get_process_manager().current());
 }
@@ -116,14 +120,28 @@ pub fn write(fd: u8, buf: &[u8]) -> isize {
     x86_64::instructions::interrupts::without_interrupts(|| get_process_manager().write(fd, buf))
 }
 
-pub fn process_exit(ret: isize) -> ! {
-    x86_64::instructions::interrupts::without_interrupts(|| {
-        get_process_manager().kill_current(ret);
-    });
+pub fn still_alive(pid: ProcessId) -> bool {
+    x86_64::instructions::interrupts::without_interrupts(|| get_process_manager().get_exit_code(pid).is_none())
+}
 
-    loop {
-        x86_64::instructions::hlt();
-    }
+pub fn wait_pid(pid: ProcessId, context: &mut ProcessContext) {
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        let manager = get_process_manager();
+        if let Some(ret) = manager.get_exit_code(pid) {
+            context.set_rax(ret as usize);
+        } else {
+            context.set_rax(0xBEE);
+        }
+    })
+}
+
+pub fn process_exit(ret: isize, context: &mut ProcessContext) {
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        let manager = get_process_manager();
+        // DONE: implement this for ProcessManager
+        manager.kill_current(ret);
+        manager.switch_next(context);
+    })
 }
 
 pub fn handle_page_fault(addr: VirtAddr, err_code: PageFaultErrorCode) -> bool {

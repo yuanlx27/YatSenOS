@@ -1,9 +1,11 @@
+use super::{FrameAllocatorRef, MapperRef};
+use crate::proc::processor;
+use crate::proc::KERNEL_PID;
+
 use x86_64::{
     structures::paging::{mapper::MapToError, page::*, Page},
     VirtAddr,
 };
-
-use super::{FrameAllocatorRef, MapperRef};
 
 // 0xffff_ff00_0000_0000 is the kernel's address space
 pub const STACK_MAX: u64 = 0x4000_0000_0000;
@@ -64,7 +66,7 @@ impl Stack {
     pub fn init(&mut self, mapper: MapperRef, alloc: FrameAllocatorRef) {
         debug_assert!(self.usage == 0, "Stack is not empty.");
 
-        self.range = elf::map_range(STACK_INIT_BOT, STACK_DEF_PAGE, mapper, alloc).unwrap();
+        self.range = elf::map_pages(STACK_INIT_BOT, STACK_DEF_PAGE, mapper, alloc, true).unwrap();
         self.usage = STACK_DEF_PAGE;
     }
 
@@ -105,12 +107,14 @@ impl Stack {
         // DONE: grow stack for page fault
         let new_start_page = Page::containing_address(addr);
         let page_count = self.range.start - new_start_page;
+        let user_access = processor::get_pid() != KERNEL_PID;
 
-        elf::map_range(
+        elf::map_pages(
             new_start_page.start_address().as_u64(),
             page_count,
             mapper,
             alloc,
+            user_access,
         )?;
 
         self.range = Page::range(new_start_page, self.range.end);

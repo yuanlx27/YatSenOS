@@ -381,6 +381,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "ysos_sh"
+version = "0.4.0"
+dependencies = [
+ "owo-colors",
+ "yslib",
+]
+
+[[package]]
 name = "ysos_syscall"
 version = "0.4.0"
 dependencies = [

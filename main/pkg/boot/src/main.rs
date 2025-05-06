@@ -10,11 +10,13 @@ use x86_64::registers::control::*;
 use xmas_elf::ElfFile;
 use ysos_boot::*;
 use uefi::mem::memory_map::MemoryMap;
+use uefi::entry;
+use uefi::Status;
 
 const CONFIG_PATH: &str = "\\EFI\\BOOT\\boot.conf";
 
-#[uefi::entry]
-fn main() -> uefi::Status {
+#[entry]
+fn boot_main() -> Status {
 
     uefi::helpers::init().expect("Failed to initialize utilities");
 
@@ -57,7 +59,7 @@ fn main() -> uefi::Status {
         .unwrap()
         .max(0x1_0000_0000); // include IOAPIC MMIO area
 
-    // 4. Map ELF segments, kernel stack and physical memory to virtual memory
+    // 5. Map ELF segments, kernel stack and physical memory to virtual memory
     let mut page_table = current_page_table();
 
     // DONE: root page table is readonly, disable write protect (Cr0)
@@ -83,12 +85,27 @@ fn main() -> uefi::Status {
     ).expect("Failed to load kernel ELF");
 
     // DONE: map kernel stack
-    elf::map_range(
-        config.kernel_stack_address,
-        config.kernel_stack_size,
+    let (stack_start, stack_size) = if config.kernel_stack_auto_grow > 0 {
+        let stack_start = config.kernel_stack_address
+            + (config.kernel_stack_size - config.kernel_stack_auto_grow) * 0x1000;
+        (stack_start, config.kernel_stack_auto_grow)
+    } else {
+        (config.kernel_stack_address, config.kernel_stack_size)
+    };
+
+    info!(
+        "Kernel init stack: [0x{:x?} -> 0x{:x?})",
+        stack_start,
+        stack_start + stack_size * 0x1000
+    );
+
+    elf::map_pages(
+        stack_start,
+        stack_size,
         &mut page_table,
         &mut UEFIFrameAllocator,
-    ).expect("Failed to map kernel stack");
+        false,
+    ).expect("Failed to map stack");
 
     // DONE: recover write protect (Cr0)
     unsafe {
@@ -97,12 +114,11 @@ fn main() -> uefi::Status {
 
     free_elf(elf);
 
-    // 5. Pass system table to kernel
+    // 6. Pass system table to kernel
     let ptr = uefi::table::system_table_raw().expect("Failed to get system table");
     let system_table = ptr.cast::<core::ffi::c_void>();
 
-
-    // 6. Exit boot and jump to ELF entry
+    // 7. Exit boot and jump to ELF entry
     info!("Exiting boot services...");
 
     let mmap = unsafe { uefi::boot::exit_boot_services(MemoryType::LOADER_DATA) };

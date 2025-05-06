@@ -1,4 +1,6 @@
-use alloc::string::String;
+use crate::drivers::input::*;
+use alloc::{collections::BTreeMap, string::String};
+use spin::Mutex;
 
 #[derive(Debug, Clone)]
 pub enum StdIO {
@@ -65,8 +67,13 @@ impl Resource {
         match self {
             Resource::Console(stdio) => match stdio {
                 StdIO::Stdin => {
-                    // FIXME: just read from kernel input buffer
-                    Some(0)
+                    // DONE: just read from kernel input buffer
+                    if let Some(ch) = try_pop_key() {
+                        buf[0] = ch;
+                        Some(1)
+                    } else {
+                        Some(0)
+                    }
                 }
                 _ => None,
             },

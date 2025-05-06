@@ -1,0 +1,8 @@
+[package]
+name = "ysos_sh"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+lib.workspace = true
+owo-colors.workspace = true

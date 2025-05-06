@@ -88,9 +88,9 @@ impl Process {
         inner.kill(ret);
     }
 
-    pub fn alloc_init_stack(&self) -> VirtAddr {
-        self.write().vm_mut().init_proc_stack(self.pid)
-    }
+    //pub fn alloc_init_stack(&self) -> VirtAddr {
+    //    self.write().vm_mut().init_proc_stack(self.pid)
+    //}
 }
 
 impl ProcessInner {
@@ -132,6 +132,9 @@ impl ProcessInner {
 
     pub fn is_ready(&self) -> bool {
         self.status == ProgramStatus::Ready
+    }
+    pub fn is_dead(&self) -> bool {
+        self.status == ProgramStatus::Dead
     }
 
     pub fn vm(&self) -> &ProcessVm {

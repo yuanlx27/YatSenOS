@@ -1,20 +1,33 @@
 use core::alloc::Layout;
 
 use crate::proc::*;
-use crate::utils::*;
+//use crate::utils::*;
 use crate::memory::*;
 
 use super::SyscallArgs;
 
 pub fn spawn_process(args: &SyscallArgs) -> usize {
-    // FIXME: get app name by args
+    // DONE: get app name by args
     //       - core::str::from_utf8_unchecked
     //       - core::slice::from_raw_parts
-    // FIXME: spawn the process by name
-    // FIXME: handle spawn error, return 0 if failed
-    // FIXME: return pid as usize
+    // DONE: spawn the process by name
+    // DONE: handle spawn error, return 0 if failed
+    // DONE: return pid as usize
+    let name = unsafe {
+        core::str::from_utf8_unchecked(core::slice::from_raw_parts(
+            args.arg0 as *const u8,
+            args.arg1,
+        ))
+    };
 
-    0
+    let pid = crate::proc::spawn(name);
+
+    if pid.is_none() {
+        warn!("spawn_process: failed to spawn process: {}", name);
+        return 0;
+    }
+
+    pid.unwrap().0 as usize 
 }
 
 pub fn sys_write(args: &SyscallArgs) -> usize {
@@ -42,12 +55,24 @@ pub fn sys_read(args: &SyscallArgs) -> usize {
     read(fd, buf) as usize
 }
 
+pub fn sys_get_pid() -> u16 {
+    // DONE: get pid from current process
+    current_pid().0
+}
+
+pub fn sys_wait_pid(args: &SyscallArgs, context: &mut ProcessContext) {
+    let pid = ProcessId(args.arg0 as u16);
+    wait_pid(pid, context);
+}
+
 pub fn exit_process(args: &SyscallArgs, context: &mut ProcessContext) {
-    // FIXME: exit process with retcode
+    // DONE: exit process with retcode
+    process_exit(args.arg0 as isize, context);
 }
 
 pub fn list_process() {
-    // FIXME: list all processes
+    // DONE: list all processes
+    print_process_list();
 }
 
 pub fn sys_allocate(args: &SyscallArgs) -> usize {

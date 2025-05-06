@@ -188,8 +188,27 @@ impl ProcessManager {
     //     pid
     // }
 
+    pub fn kill(&self, pid: ProcessId, ret: isize) {
+        let Some(proc) = self.get_proc(&pid) else {
+            error!("Process #{} not found.", pid);
+            return;
+        };
+
+        if proc.read().is_dead() {
+            error!("Process #{} is already dead.", pid);
+            return;
+        }
+
+        trace!("Kill {:#?}", &proc);
+
+        proc.kill(ret);
+    }
     pub fn kill_current(&self, ret: isize) {
         self.kill(processor::get_pid(), ret);
+    }
+
+    pub fn get_exit_code(&self, pid: ProcessId) -> Option<isize> {
+        self.get_proc(&pid).and_then(|p| p.read().exit_code())
     }
 
     pub fn handle_page_fault(&self, addr: VirtAddr, err_code: PageFaultErrorCode) -> bool {
@@ -225,26 +244,6 @@ impl ProcessManager {
         proc.write().handle_page_fault(addr);
 
         true
-    }
-
-    pub fn kill(&self, pid: ProcessId, ret: isize) {
-        let proc = self.get_proc(&pid);
-
-        if proc.is_none() {
-            warn!("Process #{} not found.", pid);
-            return;
-        }
-
-        let proc = proc.unwrap();
-
-        if proc.read().status() == ProgramStatus::Dead {
-            warn!("Process #{} is already dead.", pid);
-            return;
-        }
-
-        trace!("Kill {:#?}", &proc);
-
-        proc.kill(ret);
     }
 
     pub fn print_process_list(&self) {
