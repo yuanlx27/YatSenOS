@@ -126,6 +126,10 @@ impl ProcessInner {
         self.context.init_stack_frame(entry, stack_top)
     }
 
+    pub fn load_elf(&mut self, elf: &ElfFile) {
+        self.vm_mut().load_elf(elf);
+    }
+
     pub fn is_ready(&self) -> bool {
         self.status == ProgramStatus::Ready
     }

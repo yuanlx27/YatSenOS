@@ -12,6 +12,8 @@ pub use stack::*;
 
 use super::{PageTableContext, ProcessId};
 
+use xmas_elf::ElfFile;
+
 type MapperRef<'a> = &'a mut OffsetPageTable<'static>;
 type FrameAllocatorRef<'a> = &'a mut BootInfoFrameAllocator;
 
@@ -53,6 +55,17 @@ impl ProcessVm {
         );
 
         stack_top_vaddr
+    }
+
+    pub fn load_elf(&mut self, elf: &ElfFile) {
+        let mapper = &mut self.page_table.mapper();
+        let alloc = &mut *get_frame_alloc_for_sure();
+
+        self.stack.init(mapper, alloc);
+        self.load_elf_code(elf, mapper, alloc);
+    }
+    fn load_elf_code(&mut self, elf: &ElfFile, mapper: MapperRef, alloc: FrameAllocatorRef) {
+        elf::load_elf(elf, *PHYSICAL_OFFSET.get().unwrap(), mapper, alloc, true).unwrap();
     }
 
     pub fn handle_page_fault(&mut self, addr: VirtAddr) -> bool {

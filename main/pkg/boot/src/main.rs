@@ -79,6 +79,7 @@ fn main() -> uefi::Status {
         config.physical_memory_offset,
         &mut page_table,
         &mut UEFIFrameAllocator,
+        false,
     ).expect("Failed to load kernel ELF");
 
     // DONE: map kernel stack

@@ -14,6 +14,7 @@ paste = { workspace = true }
 spin = { workspace = true }
 x86 = { workspace = true }
 x86_64 = { workspace = true }
+xmas-elf = { workspace = true }
 log = { workspace = true }
 owo-colors = { workspace = true }
 bitflags = { workspace = true }

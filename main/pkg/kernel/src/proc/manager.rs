@@ -2,7 +2,9 @@ use super::*;
 
 use boot::AppListRef;
 
-use alloc::{collections::*, format};
+use alloc::format;
+use alloc::collections::*;
+use alloc::sync::Weak;
 use spin::{Mutex, RwLock};
 
 pub static PROCESS_MANAGER: spin::Once<ProcessManager> = spin::Once::new();
@@ -67,6 +69,40 @@ impl ProcessManager {
         self.get_proc(&processor::get_pid()).expect("No current process")
     }
 
+    pub fn spawn(
+        &self,
+        elf: &ElfFile,
+        name: String,
+        parent: Option<Weak<Process>>,
+        proc_data: Option<ProcessData>,
+    ) -> ProcessId {
+        let kproc = self.get_proc(&KERNEL_PID).unwrap();
+        let page_table = kproc.read().clone_page_table();
+        let proc_vm = Some(ProcessVm::new(page_table));
+        let proc = Process::new(name, parent, proc_vm, proc_data);
+
+        let mut inner = proc.write();
+        // DONE: load elf to process pagetable
+        // DONE: alloc new stack for process
+        // DONE: mark process as ready
+        inner.pause();
+        inner.load_elf(elf);
+        inner.init_stack_frame(
+            VirtAddr::new(elf.header.pt2.entry_point()),
+            VirtAddr::new(super::stack::STACK_INIT_TOP),
+        );
+        drop(inner);
+
+        trace!("New {:#?}", &proc);
+
+        let pid = proc.pid();
+        // DONE: something like kernel thread
+        self.add_proc(pid, proc);
+        self.push_ready(pid);
+
+        pid
+    }
+
     pub fn save_current(&self, context: &ProcessContext) {
         let proc = self.current();
         let pid = proc.pid();
@@ -112,36 +148,36 @@ impl ProcessManager {
         next_pid
     }
 
-    pub fn spawn_kernel_thread(
-        &self,
-        entry: VirtAddr,
-        name: String,
-        proc_data: Option<ProcessData>,
-    ) -> ProcessId {
-        let kproc = self.get_proc(&KERNEL_PID).unwrap();
-        let page_table = kproc.read().clone_page_table();
-        let proc_vm = Some(ProcessVm::new(page_table));
-        let proc = Process::new(name, Some(Arc::downgrade(&kproc)), proc_vm, proc_data);
+    // pub fn spawn_kernel_thread(
+    //     &self,
+    //     entry: VirtAddr,
+    //     name: String,
+    //     proc_data: Option<ProcessData>,
+    // ) -> ProcessId {
+    //     let kproc = self.get_proc(&KERNEL_PID).unwrap();
+    //     let page_table = kproc.read().clone_page_table();
+    //     let proc_vm = Some(ProcessVm::new(page_table));
+    //     let proc = Process::new(name, Some(Arc::downgrade(&kproc)), proc_vm, proc_data);
 
-        // alloc stack for the new process base on pid
-        let stack_top = proc.alloc_init_stack();
-        let mut inner = proc.write();
+    //     // alloc stack for the new process base on pid
+    //     let stack_top = proc.alloc_init_stack();
+    //     let mut inner = proc.write();
 
-        // DONE: set the stack frame
-        inner.pause();
-        inner.init_stack_frame(entry, stack_top);
+    //     // DONE: set the stack frame
+    //     inner.pause();
+    //     inner.init_stack_frame(entry, stack_top);
 
-        let pid = proc.pid();
-        info!("Spawn Process #{}: {}", pid, inner.name());
-        drop(inner);
+    //     let pid = proc.pid();
+    //     info!("Spawn Process #{}: {}", pid, inner.name());
+    //     drop(inner);
 
-        // DONE: add to process map
-        self.add_proc(pid, proc);
-        // DONE: push to ready queue
-        self.push_ready(pid);
-        // DONE: return new process pid
-        pid
-    }
+    //     // DONE: add to process map
+    //     self.add_proc(pid, proc);
+    //     // DONE: push to ready queue
+    //     self.push_ready(pid);
+    //     // DONE: return new process pid
+    //     pid
+    // }
 
     pub fn kill_current(&self, ret: isize) {
         self.kill(processor::get_pid(), ret);

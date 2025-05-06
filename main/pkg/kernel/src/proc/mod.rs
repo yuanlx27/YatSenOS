@@ -10,11 +10,13 @@ mod vm;
 use boot::BootInfo;
 use manager::*;
 use process::*;
-use vm::ProcessVm;
+use vm::*;
 
 use alloc::string::String;
+use alloc::string::ToString;
 use alloc::sync::Arc;
 use alloc::vec::Vec;
+use xmas_elf::ElfFile;
 pub use context::ProcessContext;
 pub use data::ProcessData;
 pub use paging::PageTableContext;
@@ -59,12 +61,35 @@ pub fn switch(context: &mut ProcessContext) {
     });
 }
 
-pub fn spawn_kernel_thread(entry: fn() -> !, name: String, data: Option<ProcessData>) -> ProcessId {
-    x86_64::instructions::interrupts::without_interrupts(|| {
-        let entry = VirtAddr::new(entry as usize as u64);
-        get_process_manager().spawn_kernel_thread(entry, name, data)
-    })
+pub fn spawn(name: &str) -> Option<ProcessId> {
+    let app = x86_64::instructions::interrupts::without_interrupts(|| {
+        let app_list = get_process_manager().app_list()?;
+        app_list.iter().find(|&app| app.name.eq(name))
+    })?;
+
+    elf_spawn(name.to_string(), &app.elf)
 }
+
+pub fn elf_spawn(name: String, elf: &ElfFile) -> Option<ProcessId> {
+    let pid = x86_64::instructions::interrupts::without_interrupts(|| {
+        let manager = get_process_manager();
+        let process_name = name.to_lowercase();
+        let parent = Arc::downgrade(&manager.current());
+        let pid = manager.spawn(elf, name, Some(parent), None);
+
+        debug!("Spawned process: {}#{}", process_name, pid);
+        pid
+    });
+
+    Some(pid)
+}
+
+//pub fn spawn_kernel_thread(entry: fn() -> !, name: String, data: Option<ProcessData>) -> ProcessId {
+//    x86_64::instructions::interrupts::without_interrupts(|| {
+//        let entry = VirtAddr::new(entry as usize as u64);
+//        get_process_manager().spawn_kernel_thread(entry, name, data)
+//    })
+//}
 
 pub fn print_process_list() {
     x86_64::instructions::interrupts::without_interrupts(|| {
