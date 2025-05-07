@@ -29,8 +29,15 @@ fn main() -> isize {
 
                 let name = args[1];
                 let pid = sys_spawn(name);
-                let ret = sys_wait_pid(pid);
-                println!("Process {}#{} exited with code {}", name, pid, ret);
+                let _ = sys_wait_pid(pid);
+                //println!("Process {}#{} exited with code {}", name, pid, ret);
+            },
+            "help" => {
+                println!("Available commands:");
+                println!("  exec <app>        Execute an application");
+                println!("  exit              Exit the shell");
+                println!("  help              Show this help message");
+                println!("  list apps|proc    List all applications or processes");
             },
             "list" => {
                 if args.len() == 1 {
