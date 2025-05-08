@@ -54,8 +54,12 @@ pub fn dispatcher(context: &mut ProcessContext) {
         Syscall::Read => context.set_rax(sys_read(&args)),
         // fd: arg0 as u8, buf: &[u8] (ptr: arg1 as *const u8, len: arg2)
         Syscall::Write => context.set_rax(sys_write(&args)),
+
         // None -> pid: u16
         Syscall::GetPid => context.set_rax(sys_get_pid() as usize),
+
+        // None -> pid: u16 or 0 or -1
+        Syscall::Fork => { /* ... */},
         // path: &str (ptr: arg0 as *const u8, len: arg1) -> pid: u16
         Syscall::Spawn => context.set_rax(spawn_process(&args)),
         // ret: arg0 as isize
