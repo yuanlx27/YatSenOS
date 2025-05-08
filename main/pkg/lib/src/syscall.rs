@@ -66,6 +66,12 @@ pub fn sys_deallocate(ptr: *mut u8, layout: &core::alloc::Layout) -> usize {
 }
 
 #[inline(always)]
+pub fn sys_fork() -> u16 {
+    let pid = syscall!(Syscall::Fork);
+    pid as u16
+}
+
+#[inline(always)]
 pub fn sys_spawn(path: &str) -> u16 {
     syscall!(Syscall::Spawn, path.as_ptr() as u64, path.len() as u64) as u16
 }
