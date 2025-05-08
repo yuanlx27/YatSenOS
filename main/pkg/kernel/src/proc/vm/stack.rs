@@ -70,6 +70,14 @@ impl Stack {
         self.usage = STACK_DEF_PAGE;
     }
 
+    pub fn stack_offset(&self, old_stack: &Stack) -> u64 {
+        let cur_stack_base = self.range.start.start_address().as_u64();
+        let old_stack_base = old_stack.range.start.start_address().as_u64();
+        let offset = cur_stack_base - old_stack_base;
+        debug_assert!(offset % STACK_MAX_SIZE != 0, "Invalid stack offset.");
+        offset
+    }
+
     pub fn handle_page_fault(
         &mut self,
         addr: VirtAddr,
@@ -125,6 +133,49 @@ impl Stack {
 
     pub fn memory_usage(&self) -> u64 {
         self.usage * crate::memory::PAGE_SIZE
+    }
+    
+    /// Clone a range of memory
+    ///
+    /// - `src_addr`: the address of the source memory
+    /// - `dest_addr`: the address of the target memory
+    /// - `size`: the count of pages to be cloned
+    fn clone_range(&self, cur_addr: u64, dest_addr: u64, size: u64) {
+        trace!("Clone range: {:#x} -> {:#x}", cur_addr, dest_addr);
+        unsafe {
+            core::ptr::copy_nonoverlapping::<u64>(
+                cur_addr as *mut u64,
+                dest_addr as *mut u64,
+                (size * Size4KiB::SIZE / 8) as usize,
+            );
+        }
+    }
+
+    pub fn fork(
+        &self,
+        mapper: MapperRef,
+        alloc: FrameAllocatorRef,
+        stack_offset_count: u64,
+    ) -> Self {
+        // DONE: alloc & map new stack for child (see instructions)
+        // DONE: copy the *entire stack* from parent to child
+        let cur_stack_base = self.range.start.start_address().as_u64();
+        let mut new_stack_base = cur_stack_base - stack_offset_count * STACK_MAX_SIZE;
+
+        while elf::map_pages(new_stack_base, self.usage, mapper, alloc, true).is_err() {
+            trace!("Mapping thread stack to {:#x} failed.", new_stack_base);
+            new_stack_base -= STACK_MAX_SIZE;
+        }
+        debug!("Mapping thread stack to {:#x} succeeded.", new_stack_base);
+
+        self.clone_range(cur_stack_base, new_stack_base, self.usage);
+
+        // DONE: return the new stack
+        let new_start = Page::containing_address(VirtAddr::new(new_stack_base));
+        Self {
+            range: Page::range(new_start, new_start + self.usage),
+            usage: self.usage,
+        }
     }
 }
 

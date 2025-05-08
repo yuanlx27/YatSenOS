@@ -84,13 +84,6 @@ pub fn elf_spawn(name: String, elf: &ElfFile) -> Option<ProcessId> {
     Some(pid)
 }
 
-//pub fn spawn_kernel_thread(entry: fn() -> !, name: String, data: Option<ProcessData>) -> ProcessId {
-//    x86_64::instructions::interrupts::without_interrupts(|| {
-//        let entry = VirtAddr::new(entry as usize as u64);
-//        get_process_manager().spawn_kernel_thread(entry, name, data)
-//    })
-//}
-
 pub fn print_process_list() {
     x86_64::instructions::interrupts::without_interrupts(|| {
         get_process_manager().print_process_list();
@@ -167,4 +160,19 @@ pub fn list_app() {
 
         info!("App list: {}", apps);
     });
+}
+
+pub fn fork(context: &mut ProcessContext) {
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        let manager = get_process_manager();
+        // DONE: save_current as parent
+        // DONE: fork to get child
+        // DONE: push to child & parent to ready queue
+        // DONE: switch to next process
+        let parent = manager.current().pid();
+        manager.save_current(context);
+        manager.fork();
+        manager.push_ready(parent);
+        manager.switch_next(context);
+    })
 }

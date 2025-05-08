@@ -253,7 +253,7 @@ impl ProcessManager {
             .read()
             .values()
             .filter(|p| p.read().status() != ProgramStatus::Dead)
-            .for_each(|p| output += format!("{}\n", p).as_str());
+            .for_each(|p| output += format!("{p}\n").as_str());
 
         // TODO: print memory usage of kernel heap
 
@@ -262,5 +262,18 @@ impl ProcessManager {
         output += &processor::print_processors();
 
         print!("{}", output);
+    }
+
+    pub fn fork(&self) {
+        // DONE: get current process
+        // DONE: fork to get child
+        // DONE: add child to process list
+        let proc = self.current().fork();
+        let pid = proc.pid();
+        self.add_proc(pid, proc);
+        self.push_ready(pid);
+
+        // FOR DBG: maybe print the process ready queue?
+        debug!("Ready Queue: {:?}", self.ready_queue.lock());
     }
 }

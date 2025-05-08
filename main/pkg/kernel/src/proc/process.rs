@@ -85,12 +85,33 @@ impl Process {
             ret
         );
 
-        inner.kill(ret);
+        inner.kill(self.pid, ret);
     }
 
-    //pub fn alloc_init_stack(&self) -> VirtAddr {
-    //    self.write().vm_mut().init_proc_stack(self.pid)
-    //}
+    pub fn fork(self: &Arc<Self>) -> Arc<Self> {
+        // DONE: lock inner as write
+        // DONE: inner fork with parent weak ref
+        let mut inner = self.write();
+        let child_inner = inner.fork(Arc::downgrade(self));
+        let child_pid = ProcessId::new();
+
+        // FOR DBG: maybe print the child process info
+        //          e.g. parent, name, pid, etc.
+        debug!("{}#{} forked from {}#{}", child_inner.name(), child_pid, inner.name(), self.pid);
+
+        // DONE: make the arc of child
+        // DONE: add child to current process's children list
+        // DONE: set fork ret value for parent with `context.set_rax`
+        // DONE: mark the child as ready & return it
+        let child = Arc::new(Self {
+            pid: child_pid,
+            inner: Arc::new(RwLock::new(child_inner)),
+        });
+        inner.children.push(child.clone());
+        inner.context.set_rax(child_pid.0 as usize);
+        inner.pause();
+        child
+    }
 }
 
 impl ProcessInner {
@@ -176,15 +197,70 @@ impl ProcessInner {
     pub fn parent(&self) -> Option<Arc<Process>> {
         self.parent.as_ref().and_then(|p| p.upgrade())
     }
+    pub fn set_parent(&mut self, parent: Weak<Process>) {
+        self.parent = Some(parent);
+    }
+    pub fn children(&self) -> &[Arc<Process>] {
+        &self.children
+    }
+    pub fn add_child(&mut self, child: Arc<Process>) {
+        self.children.push(child);
+    }
+    pub fn remove_child(&mut self, child: ProcessId) {
+        self.children.retain(|c| c.pid() != child);
+    }
 
-    pub fn kill(&mut self, ret: isize) {
-        // DONE: set exit code
-        self.exit_code = Some(ret);
-        // DONE: set status to dead
-        self.status = ProgramStatus::Dead;
-        // DONE: take and drop unused resources
-        self.proc_data.take();
+    pub fn kill(&mut self, pid: ProcessId, ret: isize) {
+        let children = self.children();
+
+        // remove self from parent, and set parent to children
+        if let Some(parent) = self.parent() {
+            if parent.read().exit_code().is_none() {
+                parent.write().remove_child(pid);
+                let weak = Arc::downgrade(&parent);
+                for child in children {
+                    child.write().set_parent(weak.clone());
+                }
+            } else {
+                // parent already exited, set parent to None
+                for child in children {
+                    child.write().set_parent(Weak::new());
+                }
+            }
+        }
+
         self.proc_vm.take();
+        self.proc_data.take();
+        self.exit_code = Some(ret);
+        self.status = ProgramStatus::Dead;
+    }
+
+    pub fn fork(&mut self, parent: Weak<Process>) -> ProcessInner {
+        // DONE: fork the process virtual memory struct
+        // DONE: calculate the real stack offset
+        // DONE: update `rsp` in interrupt stack frame
+        // DONE: set the return value 0 for child with `context.set_rax`
+        let new_vm = self.vm().fork(self.children.len() as u64 + 1u64);
+        let offset = new_vm.stack.stack_offset(&self.vm().stack);
+
+        let mut new_context = self.context;
+        new_context.set_stack_offset(offset);
+        new_context.set_rax(0);
+
+        // DONE: clone the process data struct
+        // DONE: construct the child process inner
+        Self {
+            name: self.name.clone(),
+            exit_code: None,
+            parent: Some(parent),
+            status: ProgramStatus::Ready,
+            ticks_passed: 0,
+            context: new_context,
+            children: Vec::new(),
+            proc_vm: Some(new_vm),
+            proc_data: self.proc_data.clone(),
+        }
+        // NOTE: return inner because there's no pid record in inner
     }
 }
 

@@ -78,6 +78,19 @@ impl ProcessVm {
     pub(super) fn memory_usage(&self) -> u64 {
         self.stack.memory_usage()
     }
+
+    pub fn fork(&self, stack_offset_count: u64) -> Self {
+        // clone the page table context (see instructions)
+        let new_page_table = self.page_table.fork();
+
+        let mapper = &mut new_page_table.mapper();
+        let alloc = &mut *get_frame_alloc_for_sure();
+
+        Self {
+            page_table: new_page_table,
+            stack: self.stack.fork(mapper, alloc, stack_offset_count),
+        }
+    }
 }
 
 impl core::fmt::Debug for ProcessVm {
