@@ -28,8 +28,8 @@ pub const KERNEL_PID: ProcessId = ProcessId(1);
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum ProgramStatus {
-    Running,
     Ready,
+    Running,
     Blocked,
     Dead,
 }
@@ -123,7 +123,10 @@ pub fn wait_pid(pid: ProcessId, context: &mut ProcessContext) {
         if let Some(ret) = manager.get_exit_code(pid) {
             context.set_rax(ret as usize);
         } else {
-            context.set_rax(0xBEE);
+            manager.wait_pid(pid);
+            manager.save_current(context);
+            manager.current().write().block();
+            manager.switch_next(context);
         }
     })
 }

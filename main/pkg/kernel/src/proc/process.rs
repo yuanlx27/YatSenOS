@@ -130,9 +130,35 @@ impl ProcessInner {
     pub fn pause(&mut self) {
         self.status = ProgramStatus::Ready;
     }
-
     pub fn resume(&mut self) {
         self.status = ProgramStatus::Running;
+    }
+    pub fn block(&mut self) {
+        self.status = ProgramStatus::Blocked;
+    }
+    pub fn kill(&mut self, pid: ProcessId, ret: isize) {
+        let children = self.children();
+
+        // remove self from parent, and set parent to children
+        if let Some(parent) = self.parent() {
+            if parent.read().exit_code().is_none() {
+                parent.write().remove_child(pid);
+                let weak = Arc::downgrade(&parent);
+                for child in children {
+                    child.write().set_parent(weak.clone());
+                }
+            } else {
+                // parent already exited, set parent to None
+                for child in children {
+                    child.write().set_parent(Weak::new());
+                }
+            }
+        }
+
+        self.proc_vm.take();
+        self.proc_data.take();
+        self.exit_code = Some(ret);
+        self.status = ProgramStatus::Dead;
     }
 
     pub fn exit_code(&self) -> Option<isize> {
@@ -208,31 +234,6 @@ impl ProcessInner {
     }
     pub fn remove_child(&mut self, child: ProcessId) {
         self.children.retain(|c| c.pid() != child);
-    }
-
-    pub fn kill(&mut self, pid: ProcessId, ret: isize) {
-        let children = self.children();
-
-        // remove self from parent, and set parent to children
-        if let Some(parent) = self.parent() {
-            if parent.read().exit_code().is_none() {
-                parent.write().remove_child(pid);
-                let weak = Arc::downgrade(&parent);
-                for child in children {
-                    child.write().set_parent(weak.clone());
-                }
-            } else {
-                // parent already exited, set parent to None
-                for child in children {
-                    child.write().set_parent(Weak::new());
-                }
-            }
-        }
-
-        self.proc_vm.take();
-        self.proc_data.take();
-        self.exit_code = Some(ret);
-        self.status = ProgramStatus::Dead;
     }
 
     pub fn fork(&mut self, parent: Weak<Process>) -> ProcessInner {

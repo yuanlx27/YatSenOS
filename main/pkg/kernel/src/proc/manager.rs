@@ -277,4 +277,19 @@ impl ProcessManager {
         // FOR DBG: maybe print the process ready queue?
         debug!("Ready Queue: {:?}", self.ready_queue.lock());
     }
+
+    /// Block the process with the given pid
+    pub fn block(&self, pid: ProcessId) {
+        if let Some(proc) = self.get_proc(&pid) {
+            // DONE: set the process as blocked
+            proc.write().block();
+        }
+    }
+
+    pub fn wait_pid(&self, pid: ProcessId) {
+        let mut wait_queue = self.wait_queue.lock();
+        // DONE: push the current process to the wait queue
+        let entry = wait_queue.entry(pid).or_default();
+        entry.insert(processor::get_pid());
+    }
 }
