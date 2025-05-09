@@ -27,13 +27,13 @@ pub fn get_process_manager() -> &'static ProcessManager {
 pub struct ProcessManager {
     processes: RwLock<BTreeMap<ProcessId, Arc<Process>>>,
     ready_queue: Mutex<VecDeque<ProcessId>>,
+    wait_queue: Mutex<BTreeMap<ProcessId, BTreeSet<ProcessId>>>,
     app_list: AppListRef,
 }
 
 impl ProcessManager {
     pub fn new(init: Arc<Process>, app_list: AppListRef) -> Self {
         let mut processes = BTreeMap::new();
-        let ready_queue = VecDeque::new();
         let pid = init.pid();
 
         trace!("Init {:#?}", init);
@@ -41,7 +41,8 @@ impl ProcessManager {
         processes.insert(pid, init);
         Self {
             processes: RwLock::new(processes),
-            ready_queue: Mutex::new(ready_queue),
+            ready_queue: Mutex::new(VecDeque::new()),
+            wait_queue: Mutex::new(BTreeMap::new()),
             app_list,
         }
     }
