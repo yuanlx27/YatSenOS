@@ -11,6 +11,7 @@ extern crate syscall_def;
 #[macro_use]
 pub mod io;
 pub mod allocator;
+pub mod sync;
 pub extern crate alloc;
 
 mod syscall;
@@ -45,10 +46,10 @@ macro_rules! errln {
 
 #[doc(hidden)]
 pub fn _print(args: Arguments) {
-    stdout().write(format!("{}", args).as_str());
+    stdout().write(format!("{args}").as_str());
 }
 
 #[doc(hidden)]
 pub fn _err(args: Arguments) {
-    stderr().write(format!("{}", args).as_str());
+    stderr().write(format!("{args}").as_str());
 }
