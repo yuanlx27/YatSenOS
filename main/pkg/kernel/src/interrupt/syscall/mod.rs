@@ -66,10 +66,14 @@ pub fn dispatcher(context: &mut ProcessContext) {
         Syscall::Exit => exit_process(&args, context),
         // pid: arg0 as u16 -> status: isize
         Syscall::WaitPid => sys_wait_pid(&args, context),
-        // None
-        Syscall::Stat => list_process(),
+
+        // op: u8, key: u32, val: usize -> ret: any
+        Syscall::Sem => sys_sem(&args, context),
+
         // None
         Syscall::ListApp => list_app(),
+        // None
+        Syscall::Stat => list_process(),
 
         // ----------------------------------------------------
         // NOTE: following syscall examples are implemented

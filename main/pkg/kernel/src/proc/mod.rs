@@ -1,15 +1,17 @@
 mod context;
 mod data;
-pub mod manager;
+mod manager;
 mod paging;
 mod pid;
 mod process;
 mod processor;
+mod sync;
 mod vm;
 
 use boot::BootInfo;
 use manager::*;
 use process::*;
+use sync::*;
 use vm::*;
 
 use alloc::string::String;
@@ -127,6 +129,55 @@ pub fn wait_pid(pid: ProcessId, context: &mut ProcessContext) {
             manager.save_current(context);
             manager.current().write().block();
             manager.switch_next(context);
+        }
+    })
+}
+
+pub fn new_sem(key: u32, value: usize) -> usize {
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        if get_process_manager().current().write().new_sem(key, value) {
+            0
+        } else {
+            1
+        }
+    })
+}
+pub fn remove_sem(key: u32) -> usize {
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        if get_process_manager().current().write().remove_sem(key) {
+            0
+        } else {
+            1
+        }
+    })
+}
+pub fn sem_signal(key: u32, context: &mut ProcessContext) {
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        let manager = get_process_manager();
+        let ret = manager.current().write().sem_signal(key);
+        match ret {
+            SemaphoreResult::Ok => context.set_rax(0),
+            SemaphoreResult::NotExist => context.set_rax(1),
+            SemaphoreResult::WakeUp(pid) => manager.wake_up(pid, None),
+            _ => unreachable!(),
+        }
+    })
+}
+pub fn sem_wait(key: u32, context: &mut ProcessContext) {
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        let manager = get_process_manager();
+        let pid = processor::get_pid();
+        let ret = manager.current().write().sem_wait(key, pid);
+        match ret {
+            SemaphoreResult::Ok => context.set_rax(0),
+            SemaphoreResult::NotExist => context.set_rax(1),
+            SemaphoreResult::Block(pid) => {
+                // DONE: save, block it, then switch to next
+                manager.save_current(context);
+                manager.block(pid);
+                manager.switch_next(context);
+            }
+            _ => unreachable!(),
         }
     })
 }

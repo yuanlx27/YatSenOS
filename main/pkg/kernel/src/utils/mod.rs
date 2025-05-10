@@ -12,9 +12,6 @@ pub use macros::*;
 pub use regs::*;
 pub use crate::format;
 
-use crate::proc::*;
-//use crate::utils;
-
 pub const fn get_ascii_header() -> &'static str {
     concat!(
         r"
@@ -27,45 +24,6 @@ __  __      __  _____            ____  _____
                                        v",
         env!("CARGO_PKG_VERSION")
     )
-}
-
-//pub fn new_test_thread(id: &str) -> ProcessId {
-//    let mut proc_data = ProcessData::new();
-//    proc_data.set_env("id", id);
-//
-//    spawn_kernel_thread(
-//        utils::func::test,
-//        format!("#{}_test", id),
-//        Some(proc_data),
-//    )
-//}
-//
-//pub fn new_stack_test_thread() {
-//    let pid = spawn_kernel_thread(
-//        utils::func::stack_test,
-//        alloc::string::String::from("stack"),
-//        None,
-//    );
-//
-//    // wait for progress exit
-//    wait(pid);
-//}
-
-fn wait(pid: ProcessId) {
-    loop {
-        // DONE: try to get the status of the process
-        // HINT: it's better to use the exit code
-        let Some(proc) = manager::get_process_manager().get_proc(&pid) else {
-            break;
-        };
-        let code = proc.read().exit_code();
-
-        if code.is_none() {
-            x86_64::instructions::hlt();
-        } else {
-            break;
-        };
-    }
 }
 
 const SHORT_UNITS: [&str; 4] = ["B", "K", "M", "G"];

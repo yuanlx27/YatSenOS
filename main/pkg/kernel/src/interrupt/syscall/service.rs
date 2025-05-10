@@ -1,7 +1,6 @@
 use core::alloc::Layout;
 
 use crate::proc::*;
-//use crate::utils::*;
 use crate::memory::*;
 
 use super::SyscallArgs;
@@ -63,6 +62,16 @@ pub fn sys_get_pid() -> u16 {
 pub fn sys_wait_pid(args: &SyscallArgs, context: &mut ProcessContext) {
     let pid = ProcessId(args.arg0 as u16);
     wait_pid(pid, context);
+}
+
+pub fn sys_sem(args: &SyscallArgs, context: &mut ProcessContext) {
+    match args.arg0 {
+        0 => context.set_rax(new_sem(args.arg1 as u32, args.arg2)),
+        1 => context.set_rax(remove_sem(args.arg1 as u32)),
+        2 => sem_signal(args.arg1 as u32, context),
+        3 => sem_wait(args.arg1 as u32, context),
+        _ => context.set_rax(usize::MAX),
+    }
 }
 
 pub fn exit_process(args: &SyscallArgs, context: &mut ProcessContext) {

@@ -158,37 +158,6 @@ impl ProcessManager {
         next_pid
     }
 
-    // pub fn spawn_kernel_thread(
-    //     &self,
-    //     entry: VirtAddr,
-    //     name: String,
-    //     proc_data: Option<ProcessData>,
-    // ) -> ProcessId {
-    //     let kproc = self.get_proc(&KERNEL_PID).unwrap();
-    //     let page_table = kproc.read().clone_page_table();
-    //     let proc_vm = Some(ProcessVm::new(page_table));
-    //     let proc = Process::new(name, Some(Arc::downgrade(&kproc)), proc_vm, proc_data);
-
-    //     // alloc stack for the new process base on pid
-    //     let stack_top = proc.alloc_init_stack();
-    //     let mut inner = proc.write();
-
-    //     // DONE: set the stack frame
-    //     inner.pause();
-    //     inner.init_stack_frame(entry, stack_top);
-
-    //     let pid = proc.pid();
-    //     info!("Spawn Process #{}: {}", pid, inner.name());
-    //     drop(inner);
-
-    //     // DONE: add to process map
-    //     self.add_proc(pid, proc);
-    //     // DONE: push to ready queue
-    //     self.push_ready(pid);
-    //     // DONE: return new process pid
-    //     pid
-    // }
-
     pub fn kill(&self, pid: ProcessId, ret: isize) {
         let Some(proc) = self.get_proc(&pid) else {
             error!("Process #{} not found.", pid);

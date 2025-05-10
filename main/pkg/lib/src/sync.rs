@@ -1,4 +1,8 @@
+use crate::*;
+
 use core::sync::atomic::{ AtomicBool, Ordering };
+
+// SpinLock {{{
 
 pub struct SpinLock {
     bolt: AtomicBool,
@@ -39,3 +43,47 @@ impl Default for SpinLock {
 }
 
 unsafe impl Sync for SpinLock {}
+
+// }}}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Semaphore {
+    // DONE: record the sem key
+    key: u32
+}
+
+impl Semaphore {
+    pub const fn new(key: u32) -> Self {
+        Semaphore { key }
+    }
+
+    #[inline(always)]
+    pub fn init(&self, value: usize) -> bool {
+        sys_new_sem(self.key, value)
+    }
+
+    // DONE: other functions with syscall...
+    #[inline(always)]
+    pub fn signal(&self) {
+        sys_sem_signal(self.key)
+    }
+
+    #[inline(always)]
+    pub fn wait(&self) {
+        sys_sem_wait(self.key)
+    }
+
+    #[inline(always)]
+    pub fn free(&self) -> bool {
+        sys_rm_sem(self.key)
+    }
+}
+
+unsafe impl Sync for Semaphore {}
+
+#[macro_export]
+macro_rules! semaphore_array {
+    [$($x:expr),+ $(,)?] => {
+        [ $($crate::Semaphore::new($x),)* ]
+    }
+}
