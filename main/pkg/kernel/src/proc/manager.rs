@@ -200,7 +200,11 @@ impl ProcessManager {
             return;
         }
 
-        trace!("Kill {:#?}", &proc);
+        if let Some(pids) = self.wait_queue.lock().remove(&pid) {
+            for pid in pids {
+                self.wake_up(pid, Some(ret));
+            }
+        }
 
         proc.kill(ret);
     }
@@ -265,6 +269,13 @@ impl ProcessManager {
         print!("{}", output);
     }
 
+    pub fn wait_pid(&self, pid: ProcessId) {
+        let mut wait_queue = self.wait_queue.lock();
+        // DONE: push the current process to the wait queue
+        let entry = wait_queue.entry(pid).or_default();
+        entry.insert(processor::get_pid());
+    }
+
     pub fn fork(&self) {
         // DONE: get current process
         // DONE: fork to get child
@@ -285,11 +296,20 @@ impl ProcessManager {
             proc.write().block();
         }
     }
-
-    pub fn wait_pid(&self, pid: ProcessId) {
-        let mut wait_queue = self.wait_queue.lock();
-        // DONE: push the current process to the wait queue
-        let entry = wait_queue.entry(pid).or_default();
-        entry.insert(processor::get_pid());
+    /// Wake up the process with the given pid
+    ///
+    /// If `ret` is `Some`, set the return value of the process
+    pub fn wake_up(&self, pid: ProcessId, ret: Option<isize>) {
+        if let Some(proc) = self.get_proc(&pid) {
+            let mut inner = proc.write();
+            if let Some(ret) = ret {
+                // DONE: set the return value of the process
+                inner.set_return(ret as usize);
+            }
+            // DONE: set the process as ready
+            // DONE: push to ready queue
+            inner.pause();
+            self.push_ready(pid);
+        }
     }
 }
