@@ -23,6 +23,11 @@ pub struct PageTableContext {
     pub reg: Arc<Cr3RegValue>,
 }
 
+impl Default for PageTableContext {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl PageTableContext {
     pub fn new() -> Self {
         let (frame, flags) = Cr3::read();

@@ -2,8 +2,6 @@
 #![no_main]
 
 use lib::*;
-use lib::sync::Semaphore;
-
 extern crate lib;
 
 const THREAD_COUNT: usize = 8;

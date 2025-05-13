@@ -48,17 +48,14 @@ impl ProcessData {
     pub fn new_sem(&mut self, key: u32, value: usize) -> bool {
         self.semaphores.write().insert(key, value)
     }
-
     #[inline]
     pub fn remove_sem(&mut self, key: u32) -> bool {
         self.semaphores.write().remove(key)
     }
-
     #[inline]
     pub fn sem_signal(&mut self, key: u32) -> SemaphoreResult {
         self.semaphores.read().signal(key)
     }
-
     #[inline]
     pub fn sem_wait(&mut self, key: u32, pid: ProcessId) -> SemaphoreResult {
         self.semaphores.read().wait(key, pid)

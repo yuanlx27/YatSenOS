@@ -40,23 +40,6 @@ impl ProcessVm {
         self
     }
 
-    //pub fn init_proc_stack(&mut self, pid: ProcessId) -> VirtAddr {
-    //    // DONE: calculate the stack for pid
-    //    let stack_top_addr = STACK_INIT_TOP - (pid.0 as u64 - 1) * STACK_MAX_SIZE;
-    //    let frame_allocator = &mut *get_frame_alloc_for_sure();
-
-    //    map_range(stack_top_addr, STACK_DEF_PAGE, &mut self.page_table.mapper(), frame_allocator).unwrap();
-
-    //    let stack_top_vaddr = VirtAddr::new(stack_top_addr);
-
-    //    self.stack = Stack::new(
-    //        Page::containing_address(stack_top_vaddr),
-    //        STACK_DEF_PAGE,
-    //    );
-
-    //    stack_top_vaddr
-    //}
-
     pub fn load_elf(&mut self, elf: &ElfFile) {
         let mapper = &mut self.page_table.mapper();
         let alloc = &mut *get_frame_alloc_for_sure();
@@ -99,7 +82,7 @@ impl core::fmt::Debug for ProcessVm {
 
         f.debug_struct("ProcessVm")
             .field("stack", &self.stack)
-            .field("memory_usage", &format!("{} {}", size, unit))
+            .field("memory_usage", &format!("{size} {unit}"))
             .field("page_table", &self.page_table)
             .finish()
     }

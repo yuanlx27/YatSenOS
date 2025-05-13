@@ -2,8 +2,6 @@ use crate::*;
 
 use core::sync::atomic::{ AtomicBool, Ordering };
 
-// SpinLock {{{
-
 pub struct SpinLock {
     bolt: AtomicBool,
 }
@@ -17,12 +15,7 @@ impl SpinLock {
 
     fn try_acquire(&mut self) -> bool {
         self.bolt
-            .compare_exchange(
-                false,
-                true,
-                Ordering::Acquire,
-                Ordering::Relaxed,
-            )
+            .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
             .is_ok()
     }
     pub fn acquire(&mut self) {
@@ -43,8 +36,6 @@ impl Default for SpinLock {
 }
 
 unsafe impl Sync for SpinLock {}
-
-// }}}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Semaphore {
