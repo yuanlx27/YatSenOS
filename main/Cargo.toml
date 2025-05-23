@@ -4,6 +4,7 @@ members = [
     "pkg/elf",
     "pkg/boot",
     "pkg/kernel",
+    "pkg/storage",
     "pkg/syscall",
     "pkg/lib",
     "pkg/app/*"
@@ -56,5 +57,6 @@ crossbeam-queue = { version = "0.3", default-features = false, features = ["allo
 
 lib = { path = "pkg/lib", package = "yslib" }
 elf = { path = "pkg/elf", package = "ysos_elf" }
+storage = { path = "pkg/storage", package = "ysos_storage" }
 syscall_def = { path = "pkg/syscall", package = "ysos_syscall" }
 boot = { path = "pkg/boot", default-features = false, package = "ysos_boot" }
