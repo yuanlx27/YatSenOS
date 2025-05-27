@@ -9,10 +9,12 @@ members = [
     "pkg/lib",
     "pkg/app/*"
 ]
-exclude = ["pkg/app/config", "pkg/app/.cargo"]
+exclude = [ "pkg/app/config", "pkg/app/.cargo" ]
 
 [workspace.package]
+name = "ysos"
 version = "0.4.0"
+authors = [ "John Smith <johnsmith0x3f@gmail.com>" ]
 edition = "2024"
 
 [profile.release-with-debug]

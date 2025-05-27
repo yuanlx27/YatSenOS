@@ -134,13 +134,16 @@ impl AtaBus {
     fn write_command(&mut self, drive: u8, block: u32, cmd: AtaCommand) -> storage::FsResult {
         let bytes = block.to_le_bytes(); // a trick to convert u32 to [u8; 4]
         unsafe {
-            // just 1 sector for current implementation
-            self.sector_count.write(1);
-
-            // FIXME: store the LBA28 address into four 8-bit registers
-            //      - read the documentation for more information
-            //      - enable LBA28 mode by setting the drive register
-            // FIXME: write the command register (cmd as u8)
+            // DONE: store the LBA28 address into four 8-bit registers
+            //       - read the documentation for more information
+            //       - enable LBA28 mode by setting the drive register
+            // DONE: write the command register (cmd as u8)
+            self.drive.write(0xE0 | (drive << 4) | (bytes[3] & 0x0F));
+            self.sector_count.write(1); // just 1 sector for current implementation
+            self.lba_low.write(bytes[0]);
+            self.lba_mid.write(bytes[1]);
+            self.lba_high.write(bytes[2]);
+            self.command.write(cmd as u8);
         }
 
         if self.status().is_empty() {
@@ -148,7 +151,8 @@ impl AtaBus {
             return Err(storage::DeviceError::UnknownDevice.into());
         }
 
-        // FIXME: poll for the status to be not BUSY
+        // DONE: poll for the status to be not BUSY
+        self.poll(AtaStatus::BUSY, false);
 
         if self.is_error() {
             warn!("ATA error: {:?} command error", cmd);
@@ -156,7 +160,9 @@ impl AtaBus {
             return Err(storage::DeviceError::InvalidOperation.into());
         }
 
-        // FIXME: poll for the status to be not BUSY and DATA_REQUEST_READY
+        // DONE: poll for the status to be not BUSY and DATA_REQUEST_READY
+        self.poll(AtaStatus::BUSY, false);
+        self.poll(AtaStatus::DATA_REQUEST_READY, true);
 
         Ok(())
     }
