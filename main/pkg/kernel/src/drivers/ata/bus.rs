@@ -173,12 +173,20 @@ impl AtaBus {
     pub(super) fn identify_drive(&mut self, drive: u8) -> storage::FsResult<AtaDeviceType> {
         info!("Identifying drive {}", drive);
 
-        // FIXME: use `AtaCommand::IdentifyDevice` to identify the drive
+        // DONE: use `AtaCommand::IdentifyDevice` to identify the drive
         //      - call `write_command` with `drive` and `0` as the block number
         //      - if the status is empty, return `AtaDeviceType::None`
         //      - else return `DeviceError::Unknown` as `FsError`
+        if self.write_command(drive, 0, AtaCommand::IdentifyDevice).is_err() {
+            if self.status().is_empty() {
+                return Ok(AtaDeviceType::None);
+            } else {
+                return Err(storage::DeviceError::Unknown.into());
+            }
+        }
 
-        // FIXME: poll for the status to be not BUSY
+        // DONE: poll for the status to be not BUSY
+        self.poll(AtaStatus::BUSY, false);
 
         Ok(match (self.cylinder_low(), self.cylinder_high()) {
             // we only support PATA drives
