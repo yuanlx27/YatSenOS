@@ -174,9 +174,9 @@ impl AtaBus {
         info!("Identifying drive {}", drive);
 
         // DONE: use `AtaCommand::IdentifyDevice` to identify the drive
-        //      - call `write_command` with `drive` and `0` as the block number
-        //      - if the status is empty, return `AtaDeviceType::None`
-        //      - else return `DeviceError::Unknown` as `FsError`
+        //       - call `write_command` with `drive` and `0` as the block number
+        //       - if the status is empty, return `AtaDeviceType::None`
+        //       - else return `DeviceError::Unknown` as `FsError`
         if self.write_command(drive, 0, AtaCommand::IdentifyDevice).is_err() {
             if self.status().is_empty() {
                 return Ok(AtaDeviceType::None);
@@ -211,10 +211,14 @@ impl AtaBus {
     ) -> storage::FsResult {
         self.write_command(drive, block, AtaCommand::ReadPio)?;
 
-        // FIXME: read the data from the data port into the buffer
-        //      - use `buf.chunks_mut(2)`
-        //      - use `self.read_data()`
-        //      - ! pay attention to data endianness
+        // DONE: read the data from the data port into the buffer
+        //       - use `buf.chunks_mut(2)`
+        //       - use `self.read_data()`
+        //       - ! pay attention to data endianness
+        for chunk in buf.chunks_mut(2) {
+            let data = self.read_data().to_le_bytes();
+            chunk.clone_from_slice(&data);
+        }
 
         if self.is_error() {
             debug!("ATA error: data read error");
@@ -232,10 +236,14 @@ impl AtaBus {
     pub(super) fn write_pio(&mut self, drive: u8, block: u32, buf: &[u8]) -> storage::FsResult {
         self.write_command(drive, block, AtaCommand::WritePio)?;
 
-        // FIXME: write the data from the buffer into the data port
-        //      - use `buf.chunks(2)`
-        //      - use `self.write_data()`
-        //      - ! pay attention to data endianness
+        // DONE: write the data from the buffer into the data port
+        //     - use `buf.chunks(2)`
+        //     - use `self.write_data()`
+        //     - ! pay attention to data endianness
+        for chunk in buf.chunks(2) {
+            let data = u16::from_le_bytes(chunk.try_into().unwrap());
+            self.write_data(data);
+        }
 
         if self.is_error() {
             debug!("ATA error: data write error");
