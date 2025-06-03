@@ -47,18 +47,61 @@ impl Fat16Impl {
     fn next_cluster(&self, cluster: Cluster) -> FsResult<Cluster> {
         let fat_offset = cluster.0 as usize * 2;
         let block_size = Block512::size();
-        let sector_to_read = self.fat_start + fat_offset / block_size;
-        let offset_in_block = fat_offset % block_size;
+        let sector = self.fat_start + fat_offset / block_size;
+        let offset = fat_offset % block_size;
 
         let mut block = Block::default();
-        self.inner.read_block(sector_to_read, &mut block)?;
+        self.inner.read_block(sector, &mut block)?;
 
-        let fat_entry = u16::from_le_bytes(block[offset_in_block..offset_in_block + 2].try_into().unwrap_or([ 0; 2 ]));
+        let fat_entry = u16::from_le_bytes(block[offset..offset + 2].try_into().unwrap_or([ 0; 2 ]));
         match fat_entry {
             0xFFF7 => Err(FsError::BadCluster),
             0xFFF8 => Err(FsError::EndOfFile),
             f => Ok(Cluster(f as u32)),
         }
+    }
+
+    fn find_entry_in_sector(&self, name: &ShortFileName, sector: usize) -> FsResult<DirEntry> {
+        let mut block = Block::default();
+        self.inner.read_block(sector, &mut block)?;
+
+        for entry in 0..Block512::size() / DirEntry::LEN {
+            let dir_entry = DirEntry::parse(&block[entry * DirEntry::LEN..(entry + 1) * DirEntry::LEN])
+                .map_err(|_| FsError::InvalidOperation)?;
+
+            if dir_entry.is_eod() {
+                return Err(FsError::FileNotFound);
+            } else if dir_entry.filename.matches(name) {
+                return Ok(dir_entry);
+            }
+        }
+
+        Err(FsError::NotInSector)
+    }
+    fn find_entry_in_directory(&self, name: &str, dir: &Directory) -> FsResult<DirEntry> {
+        let name = ShortFileName::parse(name)?;
+        let size = match dir.cluster {
+            Cluster::ROOT_DIR => self.bpb.root_entries_count() as usize * DirEntry::LEN,
+            Cluster(c) => self.bpb.sectors_per_cluster() as usize * Block512::size(),
+        };
+
+        let mut current_cluster = Some(dir.cluster);
+        while let Some(cluster) = current_cluster {
+            let current_sector = self.cluster_to_sector(&cluster);
+            for sector in current_sector..current_sector + size {
+                if let Ok(entry) = self.find_entry_in_sector(&name, sector) {
+                    return Ok(entry);
+                }
+            }
+
+            if cluster == Cluster::ROOT_DIR {
+                break;
+            }
+
+            current_cluster = self.next_cluster(cluster).ok();
+        }
+
+        Err(FsError::FileNotFound)
     }
 }
 
