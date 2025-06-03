@@ -12,8 +12,8 @@ impl Fat16Impl {
 
         // HINT: FirstDataSector = BPB_ResvdSecCnt + (BPB_NumFATs * FATSz) + RootDirSectors;
         let fat_start = bpb.reserved_sector_count() as usize;
-        let root_dir_size = { /* FIXME: get the size of root dir from bpb */ };
-        let first_root_dir_sector = { /* FIXME: calculate the first root dir sector */ };
+        let root_dir_size = (bpb.root_entries_count() as usize * DirEntry::LEN).div_ceil(block_size);
+        let first_root_dir_sector = bpb.reserved_sector_count() as usize + bpb.fat_count() as usize * bpb.sectors_per_fat() as usize;
         let first_data_sector = first_root_dir_sector + root_dir_size;
 
         Self {
@@ -29,8 +29,10 @@ impl Fat16Impl {
         match *cluster {
             Cluster::ROOT_DIR => self.first_root_dir_sector,
             Cluster(c) => {
-                // FIXME: calculate the first sector of the cluster
+                // DONE: calculate the first sector of the cluster
                 // HINT: FirstSectorofCluster = ((N – 2) * BPB_SecPerClus) + FirstDataSector;
+                let first_sector_of_cluster = (c - 2) * self.bpb.sectors_per_cluster() as u32;
+                first_sector_of_cluster as usize + self.first_data_sector
             }
         }
     }
@@ -42,6 +44,22 @@ impl Fat16Impl {
     //      - open the root directory
     //      - ...
     //      - finally, implement the FileSystem trait for Fat16 with `self.handle`
+    fn next_cluster(&self, cluster: Cluster) -> FsResult<Cluster> {
+        let fat_offset = cluster.0 as usize * 2;
+        let block_size = Block512::size();
+        let sector_to_read = self.fat_start + fat_offset / block_size;
+        let offset_in_block = fat_offset % block_size;
+
+        let mut block = Block::default();
+        self.inner.read_block(sector_to_read, &mut block)?;
+
+        let fat_entry = u16::from_le_bytes(block[offset_in_block..offset_in_block + 2].try_into().unwrap_or([ 0; 2 ]));
+        match fat_entry {
+            0xFFF7 => Err(FsError::BadCluster),
+            0xFFF8 => Err(FsError::EndOfFile),
+            f => Ok(Cluster(f as u32)),
+        }
+    }
 }
 
 impl FileSystem for Fat16 {
