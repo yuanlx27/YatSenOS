@@ -78,7 +78,7 @@ impl Fat16Impl {
 
         Err(FsError::NotInSector)
     }
-    fn find_entry_in_directory(&self, name: &str, dir: &Directory) -> FsResult<DirEntry> {
+    fn find_entry_in_dir(&self, name: &str, dir: &Directory) -> FsResult<DirEntry> {
         let name = ShortFileName::parse(name)?;
         let size = match dir.cluster {
             Cluster::ROOT_DIR => self.bpb.root_entries_count() as usize * DirEntry::LEN,
@@ -103,12 +103,39 @@ impl Fat16Impl {
 
         Err(FsError::FileNotFound)
     }
+
+    fn get_dirname(&self, path: &str) -> FsResult<Directory> {
+        let mut path = path.split('/');
+        let mut current = Directory::root();
+
+        while let Some(dir) = path.next() {
+            if dir.is_empty() {
+                continue;
+            }
+
+            let entry = self.find_entry_in_dir(dir, &current)?;
+            if entry.is_directory() {
+                current = Directory::from_entry(entry);
+            } else if path.next().is_some() {
+                return Err(FsError::NotADirectory);
+            } else {
+                break;
+            }
+        }
+
+        Ok(current)
+    }
+    fn get_entry(&self, path: &str) -> FsResult<DirEntry> {
+        let parent = self.get_dirname(path)?;
+        let name = path.rsplit('/').next().unwrap_or("");
+
+        self.find_entry_in_dir(name, &parent)
+    }
 }
 
 impl FileSystem for Fat16 {
     fn read_dir(&self, path: &str) -> FsResult<Box<dyn Iterator<Item = Metadata> + Send>> {
         // FIXME: read dir and return an iterator for all entries
-        todo!()
     }
 
     fn open_file(&self, path: &str) -> FsResult<FileHandle> {
