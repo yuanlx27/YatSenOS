@@ -19,6 +19,7 @@ mod syscall;
 use core::fmt::*;
 
 pub use alloc::*;
+pub use alloc::string::String;
 pub use io::*;
 pub use sync::*;
 pub use syscall::*;

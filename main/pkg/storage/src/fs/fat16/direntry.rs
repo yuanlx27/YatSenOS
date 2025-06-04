@@ -100,7 +100,7 @@ impl DirEntry {
         let attributes = Attributes::from_bits_truncate(data[0x0B]);
         let created_time = prase_datetime(u32::from_le_bytes(data[0x0E..0x12].try_into().unwrap()));
         let accessed_time = prase_datetime(u32::from_le_bytes([ 0, 0, data[0x12], data[0x13] ]));
-        let modified_time = prase_datetime(u32::from_le_bytes(data[0x16..0x18].try_into().unwrap()));
+        let modified_time = prase_datetime(u32::from_le_bytes(data[0x16..0x1A].try_into().unwrap()));
         let cluster = (data[0x1A] as u32)
             | ((data[0x1B] as u32) << 8)
             | ((data[0x14] as u32) << 16)

@@ -8,6 +8,8 @@ use alloc::vec::Vec;
 
 fn main() -> isize {
     loop {
+        let current_dir = String::from("/");
+
         print!("> ");
 
         let input = stdin().read_line();
@@ -30,23 +32,15 @@ fn main() -> isize {
                 let name = args[1];
                 let pid = sys_spawn(name);
                 let _ = sys_wait_pid(pid);
-                //println!("Process {}#{} exited with code {}", name, pid, ret);
             },
             "help" => {
                 println!("Available commands:");
                 println!("  exec <app>        Execute an application");
                 println!("  exit              Exit the shell");
                 println!("  help              Show this help message");
-                println!("  list apps|proc    List all applications or processes");
+                println!("  ls <dir>          List directory contents");
             },
-            "ls" => {
-                if args.len() < 2 {
-                    println!("Usage: ls <path>");
-                    continue;
-                }
-
-                sys_list_dir(args[1]);
-            },
+            "ls" => sys_list_dir(current_dir.as_str()),
             "ps" => sys_stat(),
             _ => {
                 println!("Command not found: {}", args[0]);
