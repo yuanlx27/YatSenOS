@@ -85,7 +85,7 @@ pub fn list_process() {
 }
 
 pub fn list_dir(args: &SyscallArgs) {
-    if args.arg0 > 0x100 {
+    if args.arg1 > 0x100 {
         warn!("list_dir: path too long");
         return;
     }

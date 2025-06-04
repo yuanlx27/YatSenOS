@@ -1,5 +1,6 @@
 use super::ata::*;
 use alloc::boxed::Box;
+use chrono::DateTime;
 use storage::fat16::Fat16;
 use storage::mbr::*;
 use storage::*;
@@ -40,10 +41,30 @@ pub fn ls(root_path: &str) {
         }
     };
 
-    // FIXME: format and print the file metadata
-    //      - use `for meta in iter` to iterate over the entries
-    //      - use `crate::humanized_size_short` for file size
-    //      - add '/' to the end of directory names
-    //      - format the date as you like
-    //      - do not forget to print the table header
+    // DONE: format and print the file metadata
+    //       - use `for meta in iter` to iterate over the entries
+    //       - use `crate::humanized_size_short` for file size
+    //       - add '/' to the end of directory names
+    //       - format the date as you like
+    //       - do not forget to print the table header
+    println!("  Size | Last Modified       | Name");
+
+    for meta in iter {
+        let (size, unit) = crate::humanized_size_short(meta.len as u64);
+        println!(
+            "{:>5.*}{} | {} | {}{}",
+            1,
+            size,
+            unit,
+            meta.modified
+                .map(|t| t.format("%Y/%m/%d %H:%M:%S"))
+                .unwrap_or(
+                    DateTime::from_timestamp_millis(0)
+                        .unwrap()
+                        .format("%Y/%m/%d %H:%M:%S")
+                ),
+            meta.name,
+            if meta.is_dir() { "/" } else { "" }
+        );
+    }
 }
