@@ -89,7 +89,7 @@ impl BlockDevice<Block512> for AtaDrive {
         //       - use `read_pio` to get data
         BUSES[self.bus as usize]
             .lock()
-            .read_pio(self.drive, offset as u32, block)
+            .read_pio(self.drive, offset as u32, block.as_mut())
     }
 
     fn write_block(&self, offset: usize, block: &Block512) -> storage::FsResult {
@@ -98,6 +98,6 @@ impl BlockDevice<Block512> for AtaDrive {
         //       - use `write_pio` to write data
         BUSES[self.bus as usize]
             .lock()
-            .write_pio(self.drive, offset as u32, block)
+            .write_pio(self.drive, offset as u32, block.as_ref())
     }
 }

@@ -19,7 +19,7 @@ pub enum Syscall {
 
     Sem = 66,
 
-    ListApp = 65531,
+    ListDir = 65531,
     Stat = 65532,
     Allocate = 65533,
     Deallocate = 65534,

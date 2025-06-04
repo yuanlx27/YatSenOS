@@ -22,6 +22,6 @@ pub fn spawn_init() -> proc::ProcessId {
     // NOTE: you may want to clear the screen before starting the shell
     //print!("\x1b[1;1H\x1b[2J");
 
-    proc::list_app();
+    //proc::list_app();
     proc::spawn("sh").unwrap()
 }

@@ -39,13 +39,13 @@ impl MbrPartition {
         self.data[0x02] & 0x3f
     }
     pub fn begin_cylinder(&self) -> u16 {
-        ((self.data[0x02] & 0xc0) << 2) | (self.data[0x03] as u16)
+        ((self.data[0x02] as u16 & 0xc0) << 2) | (self.data[0x03] as u16)
     }
     pub fn end_sector(&self) -> u8 {
         self.data[0x06] & 0x3f
     }
     pub fn end_cylinder(&self) -> u16 {
-        ((self.data[0x06] & 0xc0) << 2) | (self.data[0x07] as u16)
+        ((self.data[0x06] as u16 & 0xc0) << 2) | (self.data[0x07] as u16)
     }
 }
 

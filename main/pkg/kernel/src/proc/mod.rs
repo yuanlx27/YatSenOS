@@ -17,7 +17,6 @@ use vm::*;
 use alloc::string::String;
 use alloc::string::ToString;
 use alloc::sync::Arc;
-use alloc::vec::Vec;
 use xmas_elf::ElfFile;
 pub use context::ProcessContext;
 pub use data::ProcessData;
@@ -197,24 +196,24 @@ pub fn handle_page_fault(addr: VirtAddr, err_code: PageFaultErrorCode) -> bool {
     })
 }
 
-pub fn list_app() {
-    x86_64::instructions::interrupts::without_interrupts(|| {
-        let Some(app_list) = get_process_manager().app_list() else {
-            warn!("No app found in list!");
-            return;
-        };
-
-        let apps = app_list
-            .iter()
-            .map(|app| app.name.as_str())
-            .collect::<Vec<&str>>()
-            .join(", ");
-
-        // TODO: print more information like size, entry point, etc.
-
-        info!("App list: {}", apps);
-    });
-}
+//pub fn list_app() {
+//    x86_64::instructions::interrupts::without_interrupts(|| {
+//        let Some(app_list) = get_process_manager().app_list() else {
+//            warn!("No app found in list!");
+//            return;
+//        };
+//
+//        let apps = app_list
+//            .iter()
+//            .map(|app| app.name.as_str())
+//            .collect::<Vec<&str>>()
+//            .join(", ");
+//
+//        // TODO: print more information like size, entry point, etc.
+//
+//        info!("App list: {}", apps);
+//    });
+//}
 
 pub fn fork(context: &mut ProcessContext) {
     x86_64::instructions::interrupts::without_interrupts(|| {

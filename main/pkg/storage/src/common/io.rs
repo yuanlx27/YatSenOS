@@ -10,10 +10,25 @@ pub trait Read {
     fn read_all(&mut self, buf: &mut Vec<u8>) -> FsResult<usize> {
         let mut start_len = buf.len();
         loop {
-            // FIXME: read data into the buffer
-            //      - extend the buffer if it's not big enough
-            //      - break if the read returns 0 or Err
-            //      - update the length of the buffer if data was read
+            // DONE: read data into the buffer
+            //       - extend the buffer if it's not big enough
+            //       - break if the read returns 0 or Err
+            //       - update the length of the buffer if data was read
+            buf.resize(start_len + 512, 0);
+            match self.read(&mut buf[start_len..]) {
+                Ok(0) => {
+                    buf.truncate(start_len);
+                    return Ok(buf.len());
+                },
+                Ok(n) => {
+                    start_len += n;
+                    buf.truncate(start_len);
+                },
+                Err(e) => {
+                    buf.truncate(start_len);
+                    return Err(e);
+                },
+            }
         }
     }
 }
@@ -30,7 +45,7 @@ pub trait Write {
     fn flush(&mut self) -> FsResult;
 
     /// Attempts to write an entire buffer into this writer.
-    fn write_all(&mut self, mut buf: &[u8]) -> FsResult {
+    fn write_all(&mut self, mut _buf: &[u8]) -> FsResult {
         // not required for lab
         todo!()
     }

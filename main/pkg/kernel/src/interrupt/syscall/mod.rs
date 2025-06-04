@@ -23,7 +23,7 @@ pub unsafe fn register_idt(idt: &mut InterruptDescriptorTable) {
     }
 }
 
-pub extern "C" fn syscall(mut context: ProcessContext) {
+pub unsafe extern "C" fn syscall(mut context: ProcessContext) {
     x86_64::instructions::interrupts::without_interrupts(|| {
         super::syscall::dispatcher(&mut context);
     });
@@ -71,7 +71,7 @@ pub fn dispatcher(context: &mut ProcessContext) {
         Syscall::Sem => sys_sem(&args, context),
 
         // None
-        Syscall::ListApp => list_app(),
+        Syscall::ListDir => list_dir(&args),
         // None
         Syscall::Stat => list_process(),
 

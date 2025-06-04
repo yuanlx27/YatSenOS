@@ -84,6 +84,20 @@ pub fn list_process() {
     print_process_list();
 }
 
+pub fn list_dir(args: &SyscallArgs) {
+    if args.arg0 > 0x100 {
+        warn!("list_dir: path too long");
+        return;
+    }
+
+    let Some(path) = as_user_str(args.arg0, args.arg1) else {
+        warn!("list_dir: path not exist");
+        return;
+    };
+
+    crate::filesystem::ls(path);
+}
+
 pub fn sys_allocate(args: &SyscallArgs) -> usize {
     let layout = unsafe { (args.arg0 as *const Layout).as_ref().unwrap() };
 

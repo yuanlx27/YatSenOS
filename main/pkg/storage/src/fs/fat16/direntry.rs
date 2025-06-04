@@ -187,13 +187,14 @@ impl ShortFileName {
         //             [0x00..=0x1F, 0x20, 0x22, 0x2A, 0x2B, 0x2C, 0x2F, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F, 0x5B, 0x5C, 0x5D, 0x7C]
         for b in name.bytes() {
             match b {
-                0x00..0x21 | 0x22 | 0x2A..0x2D | 0x2F | 0x3A..0x40 | 0x5B..0x5E | 0x7C => {
+                0x00..=0x20 | 0x22 | 0x2A..0x2D | 0x2F | 0x3A..0x40 | 0x5B..0x5E | 0x7C => {
                     return Err(FilenameError::InvalidCharacter.into());
                 }
                 _ => {}
             }
         }
 
+        let name = name.to_uppercase();
         let segments: Vec<&str> = name.split('.').collect();
         match segments.len() {
             0 => Err(FilenameError::FilenameEmpty.into()),
@@ -205,7 +206,7 @@ impl ShortFileName {
                     return Err(FilenameError::NameTooLong.into());
                 }
                 Ok(Self {
-                    name: segments[0].make_ascii_uppercase(),
+                    name: segments[0].as_bytes().try_into().unwrap(),
                     ext: [ 0x20; 3 ],
                 })
             }
@@ -217,8 +218,8 @@ impl ShortFileName {
                     return Err(FilenameError::NameTooLong.into());
                 }
                 Ok(Self {
-                    name: segments[0].make_ascii_uppercase(),
-                    ext: segments[1].make_ascii_uppercase(),
+                    name: segments[0].as_bytes().try_into().unwrap(),
+                    ext: segments[1].as_bytes().try_into().unwrap(),
                 })
             }
             _ => Err(FilenameError::UnableToParse.into()),

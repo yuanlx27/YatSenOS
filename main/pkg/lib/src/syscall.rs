@@ -46,8 +46,8 @@ pub fn sys_wait_pid(pid: u16) -> isize {
 }
 
 #[inline(always)]
-pub fn sys_list_app() {
-    syscall!(Syscall::ListApp);
+pub fn sys_list_dir(root: &str) {
+    syscall!(Syscall::ListDir, root.as_ptr() as u64, root.len() as u64);
 }
 
 #[inline(always)]

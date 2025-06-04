@@ -44,7 +44,7 @@ impl Fat16Impl {
     //       - open the root directory
     //       - ...
     //       - finally, implement the FileSystem trait for Fat16 with `self.handle`
-    fn next_cluster(&self, cluster: Cluster) -> FsResult<Cluster> {
+    pub fn next_cluster(&self, cluster: &Cluster) -> FsResult<Cluster> {
         let fat_offset = cluster.0 as usize * 2;
         let block_size = Block512::size();
         let sector = self.fat_start + fat_offset / block_size;
@@ -131,7 +131,7 @@ impl Fat16Impl {
         let name = ShortFileName::parse(name)?;
         let size = match dir.cluster {
             Cluster::ROOT_DIR => self.bpb.root_entries_count() as usize * DirEntry::LEN,
-            Cluster(c) => self.bpb.sectors_per_cluster() as usize * Block512::size(),
+            _ => self.bpb.sectors_per_cluster() as usize * Block512::size(),
         };
 
         let mut current_cluster = Some(dir.cluster);
@@ -147,7 +147,7 @@ impl Fat16Impl {
                 break;
             }
 
-            current_cluster = self.next_cluster(cluster).ok();
+            current_cluster = self.next_cluster(&cluster).ok();
         }
 
         Err(FsError::FileNotFound)

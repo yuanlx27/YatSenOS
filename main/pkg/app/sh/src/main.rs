@@ -39,18 +39,15 @@ fn main() -> isize {
                 println!("  help              Show this help message");
                 println!("  list apps|proc    List all applications or processes");
             },
-            "list" => {
-                if args.len() == 1 {
-                    println!("Usage: list apps|proc");
+            "ls" => {
+                if args.len() < 2 {
+                    println!("Usage: ls <path>");
                     continue;
                 }
 
-                match args[1] {
-                    "apps" => sys_list_app(),
-                    "proc" => sys_stat(),
-                    _ => println!("Usage: list apps|proc"),
-                }
-            }
+                sys_list_dir(args[1]);
+            },
+            "ps" => sys_stat(),
             _ => {
                 println!("Command not found: {}", args[0]);
             },
