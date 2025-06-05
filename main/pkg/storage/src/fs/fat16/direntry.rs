@@ -206,7 +206,11 @@ impl ShortFileName {
                     return Err(FilenameError::NameTooLong.into());
                 }
                 Ok(Self {
-                    name: segments[0].as_bytes().try_into().unwrap(),
+                    name: {
+                        let mut arr = [ 0x20; 8 ];
+                        arr[..segments[0].len()].copy_from_slice(segments[0].as_bytes());
+                        arr
+                    },
                     ext: [ 0x20; 3 ],
                 })
             }
@@ -218,8 +222,16 @@ impl ShortFileName {
                     return Err(FilenameError::NameTooLong.into());
                 }
                 Ok(Self {
-                    name: segments[0].as_bytes().try_into().unwrap(),
-                    ext: segments[1].as_bytes().try_into().unwrap(),
+                    name: {
+                        let mut arr = [ 0x20; 8 ];
+                        arr[..segments[0].len()].copy_from_slice(segments[0].as_bytes());
+                        arr
+                    },
+                    ext: {
+                        let mut arr = [ 0x20; 3 ];
+                        arr[..segments[0].len()].copy_from_slice(segments[0].as_bytes());
+                        arr
+                    },
                 })
             }
             _ => Err(FilenameError::UnableToParse.into()),
@@ -229,7 +241,7 @@ impl ShortFileName {
 
 impl Debug for ShortFileName {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        write!(f, "{}", self)
+        write!(f, "{self}")
     }
 }
 
