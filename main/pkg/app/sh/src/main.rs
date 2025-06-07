@@ -4,11 +4,10 @@
 use lib::*;
 extern crate lib;
 
-use alloc::vec::Vec;
-
 fn main() -> isize {
+    let mut current_dir = String::from("/APP");
+
     loop {
-        let current_dir = String::from("/APP");
 
         print!("> ");
 
@@ -39,6 +38,7 @@ fn main() -> isize {
                 println!("  exit              Exit the shell");
                 println!("  help              Show this help message");
                 println!("  cat <file>        Display file contents");
+                println!("  cd <dir>          Change current directory");
                 println!("  ls [dir]          List directory contents");
                 println!("  ps                Show process information");
             },
@@ -78,6 +78,40 @@ fn main() -> isize {
                 }
 
                 sys_close(fd);
+            },
+            "cd" => {
+                if args.len() < 2 {
+                    println!("Usage: cd <directory>");
+                    continue;
+                }
+
+                let path = if args[1].starts_with('/') {
+                    // Absolute path
+                    String::from(args[1])
+                } else {
+                    // Relative path
+                    format!("{}/{}", &current_dir, args[1])
+                }
+                .to_ascii_uppercase();
+
+                println!("Changing directory to: {path}");
+
+                let mut canonical: Vec<&str> = Vec::new();
+                for segment in path.split('/') {
+                    match segment {
+                        "" | "." => continue,
+                        ".." => {
+                            if ! canonical.is_empty() {
+                                canonical.pop();
+                            }
+                        },
+                        _ => canonical.push(segment),
+
+                    }
+                }
+
+                current_dir = String::from("/") + &canonical.join("/");
+                println!("Changed directory to: {current_dir}");
             },
             "ls" => {
                 if args.len() < 2 {
