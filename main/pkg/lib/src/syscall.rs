@@ -106,3 +106,13 @@ pub fn sys_sem_signal(key: u32) {
 pub fn sys_sem_wait(key: u32) {
     _ = syscall!(Syscall::Sem, 3, key as u64)
 }
+
+#[inline(always)]
+pub fn sys_open(path: &str) -> u8 {
+    syscall!(Syscall::Open, path.as_ptr() as u64, path.len() as u64) as u8
+}
+
+#[inline(always)]
+pub fn sys_close(fd: u8) -> bool {
+    syscall!(Syscall::Close, fd as u64) != 0
+}

@@ -229,7 +229,7 @@ impl ShortFileName {
                     },
                     ext: {
                         let mut arr = [ 0x20; 3 ];
-                        arr[..segments[0].len()].copy_from_slice(segments[0].as_bytes());
+                        arr[..segments[1].len()].copy_from_slice(segments[1].as_bytes());
                         arr
                     },
                 })

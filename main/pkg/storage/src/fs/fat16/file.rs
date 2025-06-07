@@ -70,7 +70,7 @@ impl Read for File {
             let to_read = block_remain.min(buf.len() - bytes_read).min(length - self.offset);
 
             buf[bytes_read..bytes_read + to_read]
-                .copy_from_slice(&block[block_offset..block_offset + block_remain]);
+                .copy_from_slice(&block[block_offset..block_offset + to_read]);
 
             bytes_read += to_read;
             self.offset += to_read;
@@ -84,7 +84,7 @@ impl Read for File {
             }
         }
 
-        Ok(0)
+        Ok(bytes_read)
     }
 }
 

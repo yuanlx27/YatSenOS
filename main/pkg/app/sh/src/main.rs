@@ -8,7 +8,7 @@ use alloc::vec::Vec;
 
 fn main() -> isize {
     loop {
-        let current_dir = String::from("/");
+        let current_dir = String::from("/APP");
 
         print!("> ");
 
@@ -38,13 +38,52 @@ fn main() -> isize {
                 println!("  exec <app>        Execute an application");
                 println!("  exit              Exit the shell");
                 println!("  help              Show this help message");
-                println!("  ls <dir>          List directory contents");
+                println!("  cat <file>        Display file contents");
+                println!("  ls [dir]          List directory contents");
+                println!("  ps                Show process information");
+            },
+            "cat" => {
+                if args.len() < 2 {
+                    println!("Usage: cat <file>");
+                    continue;
+                }
+
+                let path = if args[1].starts_with('/') {
+                    // Absolute path
+                    String::from(args[1])
+                } else {
+                    // Relative path
+                    format!("{}/{}", current_dir, args[1])
+                }
+                .to_ascii_uppercase();
+
+                let fd = sys_open(path.as_str());
+
+                if fd == 0 {
+                    errln!("Invalid path");
+                    continue;
+                }
+
+                let mut buf = vec![ 0; 3072 ];
+                loop {
+                    if let Some(bytes) = sys_read(fd, &mut buf) {
+                        print!("{}", core::str::from_utf8(&buf[..bytes]).expect("Invalid UTF-8"));
+                        if bytes < buf.len() {
+                            break;
+                        }
+                    } else {
+                        errln!("Failed to read file");
+                        break;
+                    }
+                }
+
+                sys_close(fd);
             },
             "ls" => {
-                if args.len() > 1 {
-                    sys_list_dir(args[1]);
-                } else {
+                if args.len() < 2 {
                     sys_list_dir(current_dir.as_str());
+                } else {
+                    sys_list_dir(args[1]);
                 }
             },
             "ps" => sys_stat(),

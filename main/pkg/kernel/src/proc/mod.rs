@@ -11,9 +11,12 @@ mod vm;
 use boot::BootInfo;
 use manager::*;
 use process::*;
+use storage::*;
 use sync::*;
 use vm::*;
 
+use crate::Resource;
+use crate::filesystem::get_rootfs;
 use alloc::string::String;
 use alloc::string::ToString;
 use alloc::sync::Arc;
@@ -109,9 +112,14 @@ pub fn env(key: &str) -> Option<String> {
 pub fn read(fd: u8, buf: &mut [u8]) -> isize {
     x86_64::instructions::interrupts::without_interrupts(|| get_process_manager().read(fd, buf))
 }
-
 pub fn write(fd: u8, buf: &[u8]) -> isize {
     x86_64::instructions::interrupts::without_interrupts(|| get_process_manager().write(fd, buf))
+}
+pub fn open(path: &str) -> Option<u8> {
+    x86_64::instructions::interrupts::without_interrupts(|| get_process_manager().open(path))
+}
+pub fn close(fd: u8) -> bool {
+    x86_64::instructions::interrupts::without_interrupts(|| get_process_manager().close(fd))
 }
 
 pub fn still_alive(pid: ProcessId) -> bool {

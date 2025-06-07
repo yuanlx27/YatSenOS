@@ -15,7 +15,7 @@ pub fn init(init: Arc<Process>, app_list: AppListRef) {
     // DONE: set processor's current pid to init's pid
     processor::set_pid(init.pid());
 
-    PROCESS_MANAGER.call_once(|| ProcessManager::new(init ,app_list));
+    PROCESS_MANAGER.call_once(|| ProcessManager::new(init, app_list));
 }
 
 pub fn get_process_manager() -> &'static ProcessManager {
@@ -77,6 +77,23 @@ impl ProcessManager {
     #[inline]
     pub fn write(&self, fd: u8, buf: &[u8]) -> isize {
         self.current().read().write(fd, buf)
+    }
+
+    pub fn open(&self, path: &str) -> Option<u8> {
+        let stream = match get_rootfs().open_file(path) {
+            Ok(file) => Resource::File(file),
+            Err(_) => return None,
+        };
+
+        let fd = self.current().write().open(stream);
+        Some(fd)
+    }
+    pub fn close(&self, fd: u8) -> bool {
+        if fd < 3 {
+            false
+        } else {
+            self.current().write().close(fd)
+        }
     }
 
     pub fn spawn(

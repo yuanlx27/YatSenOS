@@ -44,6 +44,14 @@ impl ProcessData {
         self.resources.read().write(fd, buf)
     }
 
+    pub fn open(&mut self, res: Resource) -> u8 {
+        self.resources.write().open(res)
+    }
+    
+    pub fn close(&mut self, fd: u8) -> bool {
+        self.resources.write().close(fd)
+    }
+
     #[inline]
     pub fn new_sem(&mut self, key: u32, value: usize) -> bool {
         self.semaphores.write().insert(key, value)

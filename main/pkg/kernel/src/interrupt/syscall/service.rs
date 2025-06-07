@@ -134,3 +134,25 @@ pub fn sys_deallocate(args: &SyscallArgs) {
 pub fn sys_fork(context: &mut ProcessContext) {
     fork(context)
 }
+
+pub fn sys_open(args: &SyscallArgs) -> usize {
+    let path = match as_user_str(args.arg0, args.arg1) {
+        Some(path) => path,
+        None => return 0,
+    };
+
+    match open(path) {
+        Some(fd) => {
+            info!("sys_open: opened {path}, fd = {fd}");
+            fd as usize
+        },
+        None => {
+            warn!("sys_open: failed to open {path}");
+            0
+        }
+    }
+}
+
+pub fn sys_close(args: &SyscallArgs) -> usize {
+    close(args.arg0 as u8) as usize
+}

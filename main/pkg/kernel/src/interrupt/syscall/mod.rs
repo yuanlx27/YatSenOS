@@ -23,7 +23,7 @@ pub unsafe fn register_idt(idt: &mut InterruptDescriptorTable) {
     }
 }
 
-pub unsafe extern "C" fn syscall(mut context: ProcessContext) {
+pub extern "C" fn syscall(mut context: ProcessContext) {
     x86_64::instructions::interrupts::without_interrupts(|| {
         super::syscall::dispatcher(&mut context);
     });
@@ -54,6 +54,10 @@ pub fn dispatcher(context: &mut ProcessContext) {
         Syscall::Read => context.set_rax(sys_read(&args)),
         // fd: arg0 as u8, buf: &[u8] (ptr: arg1 as *const u8, len: arg2)
         Syscall::Write => context.set_rax(sys_write(&args)),
+        // path: &str (arg0 as *const u8, arg1 as len) -> fd: u8
+        Syscall::Open => context.set_rax(sys_open(&args)),
+        // fd: arg0 as u8 -> ret: 0/1
+        Syscall::Close => context.set_rax(sys_close(&args)),
 
         // None -> pid: u16
         Syscall::GetPid => context.set_rax(sys_get_pid() as usize),
