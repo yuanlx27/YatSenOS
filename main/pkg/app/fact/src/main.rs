@@ -18,7 +18,7 @@ fn main() -> isize {
 
     let input = stdin().read_line();
 
-    // prase input as u64
+    // parse input as u64
     let n = input.parse::<u64>().unwrap();
 
     if n > 1000000 {

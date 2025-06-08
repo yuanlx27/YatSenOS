@@ -96,11 +96,11 @@ impl DirEntry {
 
         // DONE: parse the rest of the fields
         //       - ensure you can pass the test
-        //       - you may need `prase_datetime` function
+        //       - you may need `parse_datetime` function
         let attributes = Attributes::from_bits_truncate(data[0x0B]);
-        let created_time = prase_datetime(u32::from_le_bytes(data[0x0E..0x12].try_into().unwrap()));
-        let accessed_time = prase_datetime(u32::from_le_bytes([ 0, 0, data[0x12], data[0x13] ]));
-        let modified_time = prase_datetime(u32::from_le_bytes(data[0x16..0x1A].try_into().unwrap()));
+        let created_time = parse_datetime(u32::from_le_bytes(data[0x0E..0x12].try_into().unwrap()));
+        let accessed_time = parse_datetime(u32::from_le_bytes([ 0, 0, data[0x12], data[0x13] ]));
+        let modified_time = parse_datetime(u32::from_le_bytes(data[0x16..0x1A].try_into().unwrap()));
         let cluster = (data[0x1A] as u32)
             | ((data[0x1B] as u32) << 8)
             | ((data[0x14] as u32) << 16)
@@ -123,7 +123,7 @@ impl DirEntry {
     }
 }
 
-fn prase_datetime(time: u32) -> FsTime {
+fn parse_datetime(time: u32) -> FsTime {
     // DONE: parse the year, month, day, hour, min, sec from time
     let year = (((time >> 25) & 0x7F) + 1980) as i32; // 7 bits for year, starting from 1980
     let month = (time >> 21) & 0x0F; // 4 bits for month
