@@ -30,16 +30,6 @@ impl Default for ResourceSet {
 }
 
 impl ResourceSet {
-    pub fn open(&mut self, res: Resource) -> u8 {
-        let fd = self.handles.len() as u8;
-        self.handles.insert(fd, Mutex::new(res));
-        fd
-    }
-
-    pub fn close(&mut self, fd: u8) -> bool {
-        self.handles.remove(&fd).is_some()
-    }
-
     pub fn read(&self, fd: u8, buf: &mut [u8]) -> isize {
         if let Some(count) = self.handles.get(&fd).and_then(|h| h.lock().read(buf)) {
             count as isize
@@ -54,6 +44,16 @@ impl ResourceSet {
         } else {
             -1
         }
+    }
+
+    pub fn open(&mut self, res: Resource) -> u8 {
+        let fd = self.handles.len() as u8;
+        self.handles.insert(fd, Mutex::new(res));
+        fd
+    }
+
+    pub fn close(&mut self, fd: u8) -> bool {
+        self.handles.remove(&fd).is_some()
     }
 }
 

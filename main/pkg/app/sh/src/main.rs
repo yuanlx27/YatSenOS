@@ -53,7 +53,11 @@ fn main() -> isize {
                     String::from(args[1])
                 } else {
                     // Relative path
-                    format!("{}/{}", current_dir, args[1])
+                    if current_dir.ends_with('/') {
+                        format!("{}{}", current_dir, args[1])
+                    } else {
+                        format!("{}/{}", current_dir, args[1])
+                    }
                 }
                 .to_ascii_uppercase();
 
@@ -94,8 +98,6 @@ fn main() -> isize {
                 }
                 .to_ascii_uppercase();
 
-                println!("Changing directory to: {path}");
-
                 let mut canonical: Vec<&str> = Vec::new();
                 for segment in path.split('/') {
                     match segment {
@@ -111,7 +113,6 @@ fn main() -> isize {
                 }
 
                 current_dir = String::from("/") + &canonical.join("/");
-                println!("Changed directory to: {current_dir}");
             },
             "ls" => {
                 if args.len() < 2 {

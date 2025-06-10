@@ -142,10 +142,7 @@ pub fn sys_open(args: &SyscallArgs) -> usize {
     };
 
     match open(path) {
-        Some(fd) => {
-            info!("sys_open: opened {path}, fd = {fd}");
-            fd as usize
-        },
+        Some(fd) => fd as usize,
         None => {
             warn!("sys_open: failed to open {path}");
             0
