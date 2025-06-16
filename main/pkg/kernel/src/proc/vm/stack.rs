@@ -1,5 +1,6 @@
 use super::{FrameAllocatorRef, MapperRef};
 use crate::proc::processor;
+use crate::proc::vm::UnmapError;
 use crate::proc::KERNEL_PID;
 
 use x86_64::{
@@ -176,6 +177,32 @@ impl Stack {
             range: Page::range(new_start, new_start + self.usage),
             usage: self.usage,
         }
+    }
+
+    pub fn clean_up(
+        &mut self,
+        // following types are defined in
+        //   `pkg/kernel/src/proc/vm/mod.rs`
+        mapper: MapperRef,
+        dealloc: FrameAllocatorRef,
+    ) -> Result<(), UnmapError> {
+        if self.usage == 0 {
+            warn!("Stack is empty, no need to clean up.");
+            return Ok(());
+        }
+
+        // DONE: unmap stack pages with `elf::unmap_pages`
+        elf::unmap_pages(
+            self.range.start.start_address().as_u64(),
+            self.usage,
+            mapper,
+            dealloc,
+            true,
+        )?;
+
+        self.usage = 0;
+
+        Ok(())
     }
 }
 

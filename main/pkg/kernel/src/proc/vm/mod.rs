@@ -134,7 +134,9 @@ impl ProcessVm {
         let mapper = &mut self.page_table.mapper();
         let dealloc = &mut *get_frame_alloc_for_sure();
 
-        // FIXME: implement the `clean_up` function for `Stack`
+        let start_count = dealloc.frames_recycled();
+
+        // DONE: implement the `clean_up` function for `Stack`
         self.stack.clean_up(mapper, dealloc)?;
 
         if self.page_table.using_count() == 1 {
@@ -156,8 +158,10 @@ impl ProcessVm {
             }
         }
 
-        // NOTE: maybe print how many frames are recycled
-        //       **you may need to add some functions to `BootInfoFrameAllocator`**
+        // DONE: maybe print how many frames are recycled
+        let end_count = dealloc.frames_recycled();
+
+        debug!("Recycled {} frames.", end_count - start_count);
 
         Ok(())
     }
@@ -173,5 +177,13 @@ impl core::fmt::Debug for ProcessVm {
             .field("memory_usage", &format!("{} {}", size, unit))
             .field("page_table", &self.page_table)
             .finish()
+    }
+}
+
+impl Drop for ProcessVm {
+    fn drop(&mut self) {
+        if let Err(err) = self.clean_up() {
+            error!("Failed to clean up process memory: {:?}", err);
+        }
     }
 }
