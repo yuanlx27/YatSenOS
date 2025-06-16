@@ -9,6 +9,7 @@ use x86_64::{
 };
 use xmas_elf::ElfFile;
 use crate::{humanized_size, memory::*};
+use boot::KernelPages;
 
 pub mod heap;
 pub mod stack;
@@ -59,21 +60,24 @@ impl ProcessVm {
     /// Initialize kernel vm
     ///
     /// NOTE: this function should only be called by the first process
-    // pub fn init_kernel_vm(mut self, pages: &KernelPages) -> Self {
-    //     // FIXME: record kernel code usage
-    //     self.code = /* The kernel pages */;
-    //     self.code_usage = /* The kernel code usage */;
+    pub fn init_kernel_vm(mut self, pages: &KernelPages) -> Self {
+        // DONE: record kernel code usage
+        let mut usage = 0;
+        let code = pages
+            .iter()
+            .map(|range| {
+                usage += range.size();
+                *range
+            })
+            .collect();
 
-    //     self.stack = Stack::kstack();
+        self.code = code;
+        self.code_usage = usage;
 
-    //     // ignore heap for kernel process as we don't manage it
-
-    //     self
-    // }
-
-    pub fn init_kernel_vm(mut self) -> Self {
-        // TODO: record kernel code usage
         self.stack = Stack::kstack();
+
+        // ignore heap for kernel process as we don't manage it
+
         self
     }
 

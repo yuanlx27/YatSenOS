@@ -76,13 +76,22 @@ fn boot_main() -> Status {
     );
 
     // DONE: load and map the kernel elf file
-    elf::load_elf(
+    let vec_ranges = elf::load_elf(
         &elf,
         config.physical_memory_offset,
         &mut page_table,
         &mut UEFIFrameAllocator,
         false,
     ).expect("Failed to load kernel ELF");
+
+    if vec_ranges.len() > 8 {
+        panic!("Too many kernel pages: {}", vec_ranges.len());
+    }
+
+    let mut kernel_pages = KernelPages::new();
+    for range in vec_ranges {
+        kernel_pages.push(range);
+    }
 
     // DONE: map kernel stack
     let (stack_start, stack_size) = if config.kernel_stack_auto_grow > 0 {
@@ -130,6 +139,7 @@ fn boot_main() -> Status {
         physical_memory_offset: config.physical_memory_offset,
         system_table,
         loaded_apps: apps,
+        kernel_pages,
     };
 
     // align stack to 8 bytes
