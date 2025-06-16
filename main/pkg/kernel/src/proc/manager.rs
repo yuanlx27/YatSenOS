@@ -315,8 +315,8 @@ impl ProcessManager {
 
 // A helper function to format memory usage
 fn format_usage(name: &str, used: usize, total: usize) -> String {
-    let (used_float, used_unit) = humanized_size_short(used as u64);
-    let (total_float, total_unit) = humanized_size_short(total as u64);
+    let (used_float, used_unit) = humanized_size(used as u64);
+    let (total_float, total_unit) = humanized_size(total as u64);
 
     format!(
         "{:<6} : {:>6.*} {:>3} / {:>6.*} {:>3} ({:>5.2}%)\n",

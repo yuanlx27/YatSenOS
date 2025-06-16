@@ -313,7 +313,7 @@ impl core::fmt::Debug for Process {
 impl core::fmt::Display for Process {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         let inner = self.inner.read();
-        let (size, unit) = humanized_size_short(inner.proc_vm.as_ref().map_or(0, |vm| vm.memory_usage()));
+        let (size, unit) = humanized_size(inner.proc_vm.as_ref().map_or(0, |vm| vm.memory_usage()));
         write!(
             f,
             " #{:-3} | #{:-3} | {:12} | {:7} | {:>5.1}{} | {:?}",
