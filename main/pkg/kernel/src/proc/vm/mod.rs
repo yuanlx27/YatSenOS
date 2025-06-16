@@ -95,12 +95,11 @@ impl ProcessVm {
     }
 
     fn load_elf_code(&mut self, elf: &ElfFile, mapper: MapperRef, alloc: FrameAllocatorRef) {
-        // FIXME: make the `load_elf` function return the code pages
-        self.code =
-            elf::load_elf(elf, *PHYSICAL_OFFSET.get().unwrap(), mapper, alloc, true).unwrap();
+        // DONE: make the `load_elf` function return the code pages
+        self.code = elf::load_elf(elf, *PHYSICAL_OFFSET.get().unwrap(), mapper, alloc, true).unwrap();
 
-        // FIXME: calculate code usage
-        self.code_usage = /* The code usage */;
+        // DONE: calculate code usage
+        self.code_usage = self.code.iter().map(|range| range.size()).sum();
     }
 
     pub fn fork(&self, stack_offset_count: u64) -> Self {

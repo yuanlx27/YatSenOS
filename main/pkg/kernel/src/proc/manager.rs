@@ -1,4 +1,5 @@
 use super::*;
+use crate::memory::*;
 
 use boot::AppListRef;
 
@@ -238,7 +239,7 @@ impl ProcessManager {
     }
 
     pub fn print_process_list(&self) {
-        let mut output = String::from("  PID | PPID | Process Name |  Ticks  | Status\n");
+        let mut output = String::from("  PID | PPID | Process Name |  Ticks  |  Memory  | Status\n");
 
         self.processes
             .read()
@@ -247,6 +248,17 @@ impl ProcessManager {
             .for_each(|p| output += format!("{p}\n").as_str());
 
         // TODO: print memory usage of kernel heap
+
+        let alloc = get_frame_alloc_for_sure();
+        let frames_used = alloc.frames_used();
+        let frames_recycled = alloc.frames_recycled();
+        let frames_total = alloc.frames_total();
+
+        let used = (frames_used - frames_recycled) * PAGE_SIZE as usize;
+        let total = frames_total * PAGE_SIZE as usize;
+
+        output += &format_usage("Memory", used, total);
+        drop(alloc);
 
         output += format!("Queue  : {:?}\n", self.ready_queue.lock()).as_str();
 
@@ -298,4 +310,22 @@ impl ProcessManager {
             self.push_ready(pid);
         }
     }
+}
+
+// A helper function to format memory usage
+fn format_usage(name: &str, used: usize, total: usize) -> String {
+    let (used_float, used_unit) = humanized_size(used as u64);
+    let (total_float, total_unit) = humanized_size(total as u64);
+
+    format!(
+        "{:<6} : {:>6.*} {:>3} / {:>6.*} {:>3} ({:>5.2}%)\n",
+        name,
+        2,
+        used_float,
+        used_unit,
+        2,
+        total_float,
+        total_unit,
+        used as f32 / total as f32 * 100.0
+    )
 }
