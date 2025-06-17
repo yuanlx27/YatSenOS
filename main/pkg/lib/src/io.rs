@@ -77,6 +77,7 @@ impl Stdin {
                 0x04 => {
                     if string.is_empty() {
                         string.push('\x04');
+                        print!("\n");
                         break;
                     }
                 }

@@ -29,6 +29,8 @@ pub mod interrupt;
 pub mod proc;
 
 pub use alloc::format;
+pub use alloc::string::ToString;
+pub use log::*;
 
 use boot::BootInfo;
 use uefi::{Status, runtime::ResetType};
@@ -80,17 +82,26 @@ pub fn grow_stack() {
     }
 }
 
-pub fn wait(pid: proc::ProcessId) {
+// pub fn wait(pid: proc::ProcessId) {
+//     loop {
+//         if proc::still_alive(pid) {
+//             // Why? Check reflection question 5
+//             x86_64::instructions::hlt();
+//         } else {
+//             break;
+//         }
+//     }
+// }
+
+pub fn wait(init: proc::ProcessId) {
     loop {
-        if proc::still_alive(pid) {
-            // Why? Check reflection question 5
+        if proc::wait_no_block(init).is_none() {
             x86_64::instructions::hlt();
         } else {
             break;
         }
     }
 }
-
 
 pub fn shutdown() -> ! {
     info!("YatSenOS shutting down.");

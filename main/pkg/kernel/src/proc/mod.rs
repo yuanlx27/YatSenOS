@@ -13,12 +13,13 @@ use manager::*;
 use process::*;
 use storage::*;
 use sync::*;
-use vm::*;
+pub use vm::*;
 
 use crate::Resource;
 use crate::filesystem::get_rootfs;
 use alloc::string::String;
 use alloc::string::ToString;
+use alloc::vec::Vec;
 use alloc::sync::Arc;
 use xmas_elf::ElfFile;
 pub use context::ProcessContext;
@@ -65,16 +66,23 @@ pub fn switch(context: &mut ProcessContext) {
     });
 }
 
-pub fn spawn(name: &str) -> Option<ProcessId> {
-    let app = x86_64::instructions::interrupts::without_interrupts(|| {
-        let app_list = get_process_manager().app_list()?;
-        app_list.iter().find(|&app| app.name.eq(name))
-    })?;
+// pub fn spawn(name: &str) -> Option<ProcessId> {
+//     let app = x86_64::instructions::interrupts::without_interrupts(|| {
+//         let app_list = get_process_manager().app_list()?;
+//         app_list.iter().find(|&app| app.name.eq(name))
+//     })?;
+//
+//     elf_spawn(name.to_string(), &app.elf)
+// }
+pub fn spawn(name: String, file_buffer: Vec<u8>) -> Result<ProcessId, String> {
+    let elf = xmas_elf::ElfFile::new(&file_buffer).map_err(|e| e.to_string())?;
 
-    elf_spawn(name.to_string(), &app.elf)
+    let pid = elf_spawn(name, &elf)?;
+
+    Ok(pid)
 }
 
-pub fn elf_spawn(name: String, elf: &ElfFile) -> Option<ProcessId> {
+pub fn elf_spawn(name: String, elf: &ElfFile) -> Result<ProcessId, String> {
     let pid = x86_64::instructions::interrupts::without_interrupts(|| {
         let manager = get_process_manager();
         let process_name = name.to_lowercase();
@@ -85,7 +93,33 @@ pub fn elf_spawn(name: String, elf: &ElfFile) -> Option<ProcessId> {
         pid
     });
 
-    Some(pid)
+    Ok(pid)
+}
+
+pub fn fs_spawn(path: &str) -> Option<ProcessId> {
+    let handle = get_rootfs().open_file(path);
+
+    if let Err(e) = handle {
+        warn!("fs_spawn: file error: {}, err: {:?}", path, e);
+        return None;
+    }
+
+    let mut handle = handle.unwrap();
+
+    let mut file_buffer = Vec::new();
+
+    if let Err(e) = handle.read_all(&mut file_buffer) {
+        warn!("fs_spawn: failed to read file: {}, err: {:?}", path, e);
+        return None;
+    }
+
+    match spawn(handle.meta.name, file_buffer) {
+        Ok(pid) => Some(pid),
+        Err(e) => {
+            warn!("fs_spawn: failed to spawn process: {}, {}", path, e);
+            None
+        }
+    }
 }
 
 pub fn print_process_list() {
@@ -98,7 +132,7 @@ pub fn current_pid() -> ProcessId {
     x86_64::instructions::interrupts::without_interrupts(processor::get_pid)
 }
 
-pub fn current_process_info() {
+pub fn current_proc_info() {
     debug!("{:#?}", get_process_manager().current());
 }
 
@@ -122,9 +156,13 @@ pub fn close(fd: u8) -> bool {
     x86_64::instructions::interrupts::without_interrupts(|| get_process_manager().close(fd))
 }
 
-pub fn still_alive(pid: ProcessId) -> bool {
-    x86_64::instructions::interrupts::without_interrupts(|| get_process_manager().get_exit_code(pid).is_none())
+pub fn wait_no_block(pid: ProcessId) -> Option<isize> {
+    x86_64::instructions::interrupts::without_interrupts(|| get_process_manager().get_exit_code(pid))
 }
+
+// pub fn still_alive(pid: ProcessId) -> bool {
+//     x86_64::instructions::interrupts::without_interrupts(|| get_process_manager().get_exit_code(pid).is_none())
+// }
 
 pub fn wait_pid(pid: ProcessId, context: &mut ProcessContext) {
     x86_64::instructions::interrupts::without_interrupts(|| {
@@ -238,7 +276,7 @@ pub fn fork(context: &mut ProcessContext) {
     })
 }
 
-pub fn brk(addr: Option<VirtAddr>) -> Option<VirtAddr> {
+pub fn brk(addr: Option<usize>) -> usize {
     x86_64::instructions::interrupts::without_interrupts(|| {
         // NOTE: `brk` does not need to get write lock
         get_process_manager().current().read().brk(addr)

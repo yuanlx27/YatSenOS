@@ -1,33 +1,29 @@
 use core::alloc::Layout;
-use x86_64::VirtAddr;
+// use x86_64::VirtAddr;
 
 use crate::proc::*;
 use crate::memory::*;
 
 use super::SyscallArgs;
 
-pub fn spawn_process(args: &SyscallArgs) -> usize {
-    // DONE: get app name by args
-    //       - core::str::from_utf8_unchecked
-    //       - core::slice::from_raw_parts
-    // DONE: spawn the process by name
-    // DONE: handle spawn error, return 0 if failed
-    // DONE: return pid as usize
-    let name = unsafe {
-        core::str::from_utf8_unchecked(core::slice::from_raw_parts(
-            args.arg0 as *const u8,
-            args.arg1,
-        ))
-    };
-
-    let pid = crate::proc::spawn(name);
-
-    if pid.is_none() {
-        warn!("spawn_process: failed to spawn process: {}", name);
+pub fn spawn_process(args: &SyscallArgs) -> u16 {
+    if args.arg1 > 0x100 {
+        warn!("sys_spawn: path too long");
         return 0;
     }
 
-    pid.unwrap().0 as usize 
+    let path = match as_user_str(args.arg0, args.arg1) {
+        Some(path) => path,
+        None => return 0,
+    };
+
+    match fs_spawn(path) {
+        Some(pid) => pid.0,
+        None => {
+            warn!("spawn_process: failed to spawn: {}", path);
+            0
+        }
+    }
 }
 
 pub fn sys_write(args: &SyscallArgs) -> usize {
@@ -159,10 +155,7 @@ pub fn sys_brk(args: &SyscallArgs) -> usize {
     let new_heap_end = if args.arg0 == 0 {
         None
     } else {
-        Some(VirtAddr::new(args.arg0 as u64))
+        Some(args.arg0)
     };
-    match brk(new_heap_end) {
-        Some(new_heap_end) => new_heap_end.as_u64() as usize,
-        None => !0,
-    }
+    brk(new_heap_end)
 }

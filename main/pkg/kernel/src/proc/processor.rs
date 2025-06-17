@@ -53,6 +53,11 @@ pub fn get_pid() -> ProcessId {
     current().get_pid().expect("No current process")
 }
 
+#[inline]
+pub fn current_pid() -> ProcessId {
+    current().get_pid().expect("No current process")
+}
+
 impl Processor {
     #[inline]
     pub fn is_free(&self) -> bool {

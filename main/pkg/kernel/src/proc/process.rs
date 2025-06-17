@@ -237,8 +237,11 @@ impl ProcessInner {
         self.children.retain(|c| c.pid() != child);
     }
 
-    pub fn brk(&self, addr: Option<VirtAddr>) -> Option<VirtAddr> {
-        self.vm().brk(addr)
+    pub fn brk(&self, addr: Option<usize>) -> usize {
+        match self.vm().brk(addr.map(|a| VirtAddr::new(a as u64))) {
+            Some(addr) => addr.as_u64() as usize,
+            None => !0,
+        }
     }
 
     pub fn fork(&mut self, parent: Weak<Process>) -> ProcessInner {

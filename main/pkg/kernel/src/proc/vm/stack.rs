@@ -50,7 +50,7 @@ impl Stack {
         }
     }
 
-    pub const fn empty() -> Self {
+    pub fn empty() -> Self {
         Self {
             range: Page::range(STACK_INIT_TOP_PAGE, STACK_INIT_TOP_PAGE),
             usage: 0,
@@ -116,7 +116,7 @@ impl Stack {
         // DONE: grow stack for page fault
         let new_start_page = Page::containing_address(addr);
         let page_count = self.range.start - new_start_page;
-        let user_access = processor::get_pid() != KERNEL_PID;
+        let user_access = processor::current_pid() != KERNEL_PID;
 
         elf::map_pages(
             new_start_page.start_address().as_u64(),
@@ -127,7 +127,7 @@ impl Stack {
         )?;
 
         self.range = Page::range(new_start_page, self.range.end);
-        self.usage += self.range.count() as u64;
+        self.usage = self.range.count() as u64;
 
         Ok(())
     }
@@ -135,7 +135,7 @@ impl Stack {
     pub fn memory_usage(&self) -> u64 {
         self.usage * crate::memory::PAGE_SIZE
     }
-    
+
     /// Clone a range of memory
     ///
     /// - `src_addr`: the address of the source memory
@@ -192,13 +192,8 @@ impl Stack {
         }
 
         // DONE: unmap stack pages with `elf::unmap_pages`
-        elf::unmap_pages(
-            self.range.start.start_address().as_u64(),
-            self.usage,
-            mapper,
-            dealloc,
-            true,
-        )?;
+        let start = self.range.start.start_address().as_u64();
+        elf::unmap_pages(start, self.usage, mapper, dealloc, true)?;
 
         self.usage = 0;
 

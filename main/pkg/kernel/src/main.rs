@@ -11,17 +11,24 @@ boot::entry_point!(kernel_main);
 pub fn kernel_main(boot_info: &'static boot::BootInfo) -> ! {
     ysos::init(boot_info);
 
-    ysos::wait(spawn_init());
+    ysos::wait(spawn_init(boot_info));
     //proc::list_app();
     //proc::spawn("hello").unwrap();
 
     ysos::shutdown();
 }
 
-pub fn spawn_init() -> proc::ProcessId {
-    // NOTE: you may want to clear the screen before starting the shell
+pub fn spawn_init(boot_info: &'static boot::BootInfo) -> proc::ProcessId {
     //print!("\x1b[1;1H\x1b[2J");
 
-    //proc::list_app();
-    proc::spawn("sh").unwrap()
+    if let Some(apps) = &boot_info.loaded_apps {
+        for app in apps {
+            if app.name.eq("sh") {
+                info!("Found sh in loaded apps, spawning...");
+                return proc::elf_spawn("sh".to_string(), &app.elf).unwrap();
+            }
+        }
+    }
+
+    proc::fs_spawn("/APP/SH").unwrap()
 }
