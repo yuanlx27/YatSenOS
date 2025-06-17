@@ -52,19 +52,55 @@ impl Heap {
         mapper: MapperRef,
         alloc: FrameAllocatorRef,
     ) -> Option<VirtAddr> {
-        // FIXME: if new_end is None, return the current end address
+        // DONE: if new_end is None, return the current end address
+        let Some(new_end) = new_end else {
+            return Some(VirtAddr::new(self.end.load(Ordering::Relaxed)));
+        };
 
-        // FIXME: check if the new_end is valid (in range [base, base + HEAP_SIZE])
+        // DONE: check if the new_end is valid (in range [base, base + HEAP_SIZE])
+        if new_end < self.base || self.base + HEAP_SIZE < new_end {
+            error!("Heap::brk: new end is out of range");
+            return None;
+        }
 
-        // FIXME: calculate the difference between the current end and the new end
+        // DONE: calculate the difference between the current end and the new end
+        let cur_end = self.end.load(Ordering::Acquire);
 
-        // NOTE: print the heap difference for debugging
+        // Calculate pages.
+        let mut cur_end_page = Page::containing_address(VirtAddr::new(cur_end));
+        if cur_end != self.base.as_u64() {
+            cur_end_page += 1;
+        }
+        let mut new_end_page = Page::containing_address(new_end);
+        if new_end != self.base {
+            new_end_page += 1;
+        }
 
-        // FIXME: do the actual mapping or unmapping
+        // DONE: print the heap difference for debugging
+        debug!("Heap end addr: {:#x} -> {:#x}", cur_end, new_end.as_u64());
+        debug!(
+            "Heap end page: {:#x} -> {:#x}",
+            cur_end_page.start_address().as_u64(),
+            new_end_page.start_address().as_u64()
+        );
 
-        // FIXME: update the end address
+        // DONE: do the actual mapping or unmapping
+        match new_end_page.cmp(&cur_end_page) {
+            core::cmp::Ordering::Greater => {
+                let range = Page::range_inclusive(cur_end_page, new_end_page - 1);
+                elf::map_range(range, mapper, alloc, true).ok()?;
+            },
+            core::cmp::Ordering::Less => {
+                let range = Page::range_inclusive(new_end_page, cur_end_page - 1);
+                elf::unmap_range(range, mapper, alloc, true).ok()?;
+            },
+            core::cmp::Ordering::Equal => {},
+        }
 
-        new_end
+        // DONE: update the end address
+        self.end.store(new_end.as_u64(), Ordering::Release);
+
+        Some(new_end)
     }
 
     pub(super) fn clean_up(
@@ -76,9 +112,14 @@ impl Heap {
             return Ok(());
         }
 
-        // FIXME: load the current end address and **reset it to base** (use `swap`)
+        // DONE: load the current end address and **reset it to base** (use `swap`)
+        let end_addr = self.end.swap(self.base.as_u64(), Ordering::Release);
+        let start_page = Page::containing_address(self.base);
+        let end_page = Page::containing_address(VirtAddr::new(end_addr));
+        let range = Page::range_inclusive(start_page, end_page);
 
-        // FIXME: unmap the heap pages
+        // DONE: unmap the heap pages
+        elf::unmap_range(range, mapper, dealloc, true)?;
 
         Ok(())
     }

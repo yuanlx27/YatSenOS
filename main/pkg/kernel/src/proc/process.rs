@@ -237,6 +237,10 @@ impl ProcessInner {
         self.children.retain(|c| c.pid() != child);
     }
 
+    pub fn brk(&self, addr: Option<VirtAddr>) -> Option<VirtAddr> {
+        self.vm().brk(addr)
+    }
+
     pub fn fork(&mut self, parent: Weak<Process>) -> ProcessInner {
         // DONE: fork the process virtual memory struct
         // DONE: calculate the real stack offset

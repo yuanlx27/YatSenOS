@@ -237,3 +237,11 @@ pub fn fork(context: &mut ProcessContext) {
         manager.switch_next(context);
     })
 }
+
+pub fn brk(addr: Option<VirtAddr>) -> Option<VirtAddr> {
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        // NOTE: `brk` does not need to get write lock
+        get_process_manager().current().read().brk(addr)
+    })
+}
+
