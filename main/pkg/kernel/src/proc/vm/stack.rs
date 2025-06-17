@@ -127,7 +127,7 @@ impl Stack {
         )?;
 
         self.range = Page::range(new_start_page, self.range.end);
-        self.usage += self.range.count() as u64;
+        self.usage = self.range.count() as u64;
 
         Ok(())
     }
