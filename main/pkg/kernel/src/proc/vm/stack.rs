@@ -192,13 +192,8 @@ impl Stack {
         }
 
         // DONE: unmap stack pages with `elf::unmap_pages`
-        elf::unmap_pages(
-            self.range.start.start_address().as_u64(),
-            self.usage,
-            mapper,
-            dealloc,
-            true,
-        )?;
+        let range = self.range.start.start_address().as_u64();
+        elf::unmap_pages(range, self.usage, mapper, dealloc, true)?;
 
         self.usage = 0;
 
