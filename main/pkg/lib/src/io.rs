@@ -49,10 +49,8 @@ impl Stdin {
     }
 
     fn try_read_key_with_buf(&self, buf: &mut [u8]) -> Option<u8> {
-        if let Some(bytes) = sys_read(0, buf) {
-            if bytes == 1 {
-                return Some(buf[0]);
-            }
+        if let Some(1) = sys_read(0, buf) {
+            return Some(buf[0]);
         }
         None
     }
@@ -68,14 +66,21 @@ impl Stdin {
             let ch = self.pop_key();
 
             match ch {
-                0x0d => {
+                0x0D => {
                     stdout().write("\n");
                     break;
-                }
+                },
                 0x03 => {
                     string.clear();
                     break;
-                }
+                },
+                0x04 => {
+                    if string.is_empty() {
+                        stdout().write("\n");
+                        string.push('\x04');
+                        break;
+                    }
+                },
                 0x08 | 0x7F if !string.is_empty() => {
                     if !string.is_empty() {
                         stdout().write("\x08 \x08");

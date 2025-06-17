@@ -8,7 +8,6 @@ fn main() -> isize {
     let mut current_dir = String::from("/APP");
 
     loop {
-
         print!("> ");
 
         let input = stdin().read_line();
