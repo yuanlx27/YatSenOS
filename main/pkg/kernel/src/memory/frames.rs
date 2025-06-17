@@ -27,11 +27,13 @@ impl BootInfoFrameAllocator {
     /// memory map is valid. The main requirement is that all frames that are marked
     /// as `USABLE` in it are really unused.
     pub unsafe fn init(memory_map: &MemoryMap, size: usize) -> Self {
-        BootInfoFrameAllocator {
-            size,
-            used: 0,
-            frames: create_frame_iter(memory_map),
-            recycled: Vec::new(),
+        unsafe {
+            BootInfoFrameAllocator {
+                size,
+                used: 0,
+                frames: create_frame_iter(memory_map),
+                recycled: Vec::new(),
+            }
         }
     }
 
@@ -67,7 +69,7 @@ impl FrameDeallocator<Size4KiB> for BootInfoFrameAllocator {
     }
 }
 
-fn create_frame_iter(memory_map: &MemoryMap) -> BootInfoFrameIter {
+unsafe fn create_frame_iter(memory_map: &MemoryMap) -> BootInfoFrameIter {
     let iter = memory_map
         .clone()
         .into_iter()

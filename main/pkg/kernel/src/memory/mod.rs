@@ -5,7 +5,9 @@ pub mod user;
 pub mod gdt;
 
 pub use address::*;
+pub use allocator::*;
 pub use frames::*;
+pub use user::*;
 
 use crate::humanized_size;
 

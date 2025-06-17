@@ -248,7 +248,15 @@ impl ProcessManager {
             .filter(|p| p.read().status() != ProgramStatus::Dead)
             .for_each(|p| output += format!("{p}\n").as_str());
 
-        // TODO: print memory usage of kernel heap
+        // DONE: print memory usage of kernel heap
+        let heap_size = HEAP_SIZE;
+        let heap_used = ALLOCATOR.lock().used();
+        output += &format_usage("Kernel Heap", heap_used, heap_size);
+
+        // DONE: print memory usage of user heap
+        let user_heap_size = USER_HEAP_SIZE;
+        let user_heap_used = USER_ALLOCATOR.lock().used();
+        output += &format_usage("User Heap", user_heap_used, user_heap_size);
 
         let alloc = get_frame_alloc_for_sure();
         let frames_used = alloc.frames_used();
@@ -259,7 +267,7 @@ impl ProcessManager {
         let total = frames_total * PAGE_SIZE as usize;
 
         output += &format_usage("Memory", used, total);
-        drop(alloc);
+        //drop(alloc);
 
         output += format!("Queue  : {:?}\n", self.ready_queue.lock()).as_str();
 

@@ -66,13 +66,13 @@ impl ProcessVm {
         let code = pages
             .iter()
             .map(|range| {
-                usage += range.size();
+                usage += range.count();
                 *range
             })
             .collect();
 
         self.code = code;
-        self.code_usage = usage;
+        self.code_usage = usage as u64 * PAGE_SIZE;
 
         self.stack = Stack::kstack();
 
@@ -103,7 +103,8 @@ impl ProcessVm {
         self.code = elf::load_elf(elf, *PHYSICAL_OFFSET.get().unwrap(), mapper, alloc, true).unwrap();
 
         // DONE: calculate code usage
-        self.code_usage = self.code.iter().map(|range| range.size()).sum();
+        let usage: usize = self.code.iter().map(|range| range.count()).sum();
+        self.code_usage = usage as u64 * PAGE_SIZE;
     }
 
     pub fn fork(&self, stack_offset_count: u64) -> Self {
@@ -178,7 +179,7 @@ impl core::fmt::Debug for ProcessVm {
         f.debug_struct("ProcessVm")
             .field("stack", &self.stack)
             .field("heap", &self.heap)
-            .field("memory_usage", &format!("{} {}", size, unit))
+            .field("memory_usage", &format!("{size} {unit}"))
             .field("page_table", &self.page_table)
             .finish()
     }
@@ -188,6 +189,8 @@ impl Drop for ProcessVm {
     fn drop(&mut self) {
         if let Err(err) = self.clean_up() {
             error!("Failed to clean up process memory: {:?}", err);
+        } else {
+            debug!("ProcessVm dropped: {:?}", self);
         }
     }
 }
