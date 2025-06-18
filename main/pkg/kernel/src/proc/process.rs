@@ -33,12 +33,12 @@ impl Process {
     }
 
     #[inline]
-    pub fn write(&self) -> RwLockWriteGuard<ProcessInner> {
+    pub fn write(&self) -> RwLockWriteGuard<'_, ProcessInner> {
         self.inner.write()
     }
 
     #[inline]
-    pub fn read(&self) -> RwLockReadGuard<ProcessInner> {
+    pub fn read(&self) -> RwLockReadGuard<'_, ProcessInner> {
         self.inner.read()
     }
 

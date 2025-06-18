@@ -34,7 +34,7 @@ pub fn new_test_thread(id: &str) -> ProcessId {
 
     spawn_kernel_thread(
         utils::func::test,
-        format!("#{}_test", id),
+        format!("#{id}_test"),
         Some(proc_data),
     )
 }

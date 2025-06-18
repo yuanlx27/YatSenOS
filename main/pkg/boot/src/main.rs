@@ -6,8 +6,6 @@
 extern crate log;
 extern crate alloc;
 
-use alloc::boxed::Box;
-use alloc::vec;
 use uefi::{entry, Status};
 use x86_64::registers::control::*;
 use xmas_elf::ElfFile;
